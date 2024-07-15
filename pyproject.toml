@@ -16,6 +16,7 @@ classifiers = [
 dependencies = [
   "attrs",
   "cads-api-client",
+  "pyyaml",
   "tqdm",
   "typer"
 ]
@@ -38,6 +39,7 @@ strict = true
 # Same as Black.
 indent-width = 4
 line-length = 88
+target-version = "py311"
 
 [tool.ruff.lint]
 ignore = [

@@ -6,12 +6,13 @@ from .client import Client
 
 
 def cli(
-    url: Optional[str] = None,
-    key: Optional[str] = None,
+    url: Optional[str] = None,  # noqa: UP007
+    key: Optional[str] = None,  # noqa: UP007
     report_path: str = "e2e_report.json",
+    requests_yaml_path: Optional[str] = None,  # noqa: UP007
 ) -> None:
     client = Client(url=url, key=key)
-    client.test_random_requests(report_path=report_path)
+    client.write_report(report_path=report_path, requests_yaml_path=requests_yaml_path)
 
 
 def main() -> None:
