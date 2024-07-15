@@ -1,6 +1,7 @@
 import contextlib
 import datetime
 import json
+import logging
 import os
 import random
 import tempfile
@@ -12,6 +13,8 @@ import tqdm
 import yaml
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _licences_to_set_of_tuples(
@@ -38,6 +41,7 @@ def check_report(
             size = os.path.getsize(target)
             assert size == expected_size, f"{size=} {expected_size=}"
     except AssertionError as exc:
+        LOGGER.exception(f"{report['collection_id']=}")
         report["exception"] = str(exc)
     return report
 
@@ -95,8 +99,6 @@ class Client(ApiClient):
             request = self.random_request(collection_id)
         assert "target" not in request
         request.setdefault("_timestamp", datetime.datetime.now().isoformat())
-        request.setdefault("retry_options", {})
-        request["retry_options"].setdefault("maximum_tries", 0)
 
         collection = self.collection(collection_id)
         report: dict[str, Any] = {"collection_id": collection_id, "request": request}
@@ -104,8 +106,9 @@ class Client(ApiClient):
         try:
             remote = collection.submit(**request)
             report["request_uid"] = remote.request_uid
-            report["target"] = remote.download()
+            report["target"] = remote.download(retry_options={"maximum_tries": 0})
         except Exception as exc:
+            LOGGER.exception(f"{collection_id=}")
             report["exception"] = str(exc)
         else:
             toc = time.perf_counter()
