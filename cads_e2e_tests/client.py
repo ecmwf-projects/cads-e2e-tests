@@ -63,16 +63,14 @@ class Client(ApiClient):
     def test_random_request(self, collection_id: str) -> dict[str, Any]:
         request = self.random_request(collection_id)
         request["_no_cache"] = datetime.datetime.now().isoformat()
-        collection = self.collection(collection_id)
+        report: dict[str, Any] = {"request": request}
 
+        collection = self.collection(collection_id)
         tic = time.perf_counter()
-        remote = collection.submit(**request)
-        report: dict[str, Any] = {
-            "request": request,
-            "request_uid": remote.request_uid,
-        }
         with tmp_working_dir():
             try:
+                remote = collection.submit(**request)
+                report["request_uid"] = remote.request_uid
                 report["target"] = remote.download()
             except Exception as exc:
                 report["exception"] = str(exc)

@@ -8,7 +8,7 @@ from .client import Client
 def cli(
     url: Optional[str] = None,
     key: Optional[str] = None,
-    report_path: str = "report.json",
+    report_path: str = "e2e_report.json",
 ) -> None:
     client = Client(url=url, key=key)
     client.test_random_requests(report_path=report_path)
