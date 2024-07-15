@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/ecmwf-projects/cookiecutter-conda-package",
+  "commit": "900af102174ecfcb6aac3a1610636e70b00053ee",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "project_name": "cads-e2e-tests",
+      "project_slug": "cads_e2e_tests",
+      "project_short_description": "CADS E2E Tests",
+      "copyright_holder": "European Union",
+      "copyright_year": "2024",
+      "mypy_strict": true,
+      "integration_tests": false,
+      "_template": "https://github.com/ecmwf-projects/cookiecutter-conda-package"
+    }
+  },
+  "directory": null
+}
