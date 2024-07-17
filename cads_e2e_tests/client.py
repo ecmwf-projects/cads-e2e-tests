@@ -1,20 +1,19 @@
-import contextlib
 import datetime
 import json
 import logging
 import os
 import random
-import tempfile
-import time
-from typing import Any, Iterator
+from typing import Any, Sequence
 
 import attrs
 import tqdm
-import yaml
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
 
+from . import utils
+
 LOGGER = logging.getLogger(__name__)
+RETRY_OPTIONS = {"maximum_tries": 0}
 
 
 def _licences_to_set_of_tuples(
@@ -23,42 +22,8 @@ def _licences_to_set_of_tuples(
     return {(licence["id"], licence["revision"]) for licence in licences["licences"]}
 
 
-def check_report(
-    report: dict[str, Any],
-    expected_ext: str | None,
-    expected_size: int | None,
-) -> dict[str, Any]:
-    if "exception" in report:
-        return report
-
-    target = report["target"]
-    try:
-        if expected_ext is not None:
-            _, ext = os.path.splitext(target)
-            assert ext == expected_ext, f"{ext=} {expected_ext=}"
-
-        if expected_size is not None:
-            size = os.path.getsize(target)
-            assert size == expected_size, f"{size=} {expected_size=}"
-    except AssertionError as exc:
-        LOGGER.exception(f"{report['collection_id']=}")
-        report["exception"] = str(exc)
-    return report
-
-
-@contextlib.contextmanager
-def tmp_working_dir() -> Iterator[str]:
-    old_dir = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        try:
-            yield tmpdir
-        finally:
-            os.chdir(old_dir)
-
-
 @attrs.define
-class Client(ApiClient):
+class TestClient(ApiClient):
     def __attrs_post_init__(self) -> None:
         for licence in self.missing_licences:
             self.accept_licence(*licence)
@@ -92,59 +57,65 @@ class Client(ApiClient):
         collection_id: str,
         expected_ext: str | None = None,
         expected_size: int | None = None,
+        expected_time: float | None = None,
         **request: Any,
     ) -> dict[str, Any]:
         # Normalise request
         if not request:
             request = self.random_request(collection_id)
-        assert "target" not in request
         request.setdefault("_timestamp", datetime.datetime.now().isoformat())
+        report: dict[str, Any] = {
+            "collection_id": collection_id,
+            "request": request,
+            "tracebacks": [],
+        }
 
-        collection = self.collection(collection_id)
-        report: dict[str, Any] = {"collection_id": collection_id, "request": request}
-        tic = time.perf_counter()
-        try:
-            remote = collection.submit(**request)
+        with utils.catch_exception(
+            report, LOGGER, elapsed_time=True, exceptions=(Exception,)
+        ):
+            remote = self.collection(collection_id).submit(**request)
             report["request_uid"] = remote.request_uid
-            report["target"] = remote.download(retry_options={"maximum_tries": 0})
-        except Exception as exc:
-            LOGGER.exception(f"{collection_id=}")
-            report["exception"] = str(exc)
-        else:
-            toc = time.perf_counter()
-            report["elapsed_time"] = toc - tic
 
-        return check_report(
-            report,
-            expected_ext=expected_ext,
-            expected_size=expected_size,
-        )
+            target = remote.download(retry_options=RETRY_OPTIONS)
+            report["target"] = target
+            report["size"] = os.path.getsize(target)
 
-    def write_report(
+        if not report["tracebacks"]:
+            with utils.catch_exception(
+                report, LOGGER, elapsed_time=False, exceptions=(AssertionError,)
+            ):
+                report = utils.check_report(
+                    report,
+                    expected_ext=expected_ext,
+                    expected_size=expected_size,
+                    expected_time=expected_time,
+                )
+        return report
+
+    def make_report(
         self,
-        report_path: str,
-        requests_yaml_path: str | None = None,
+        requests: Sequence[dict[str, Any]] | None = None,
+        report_path: str | None = None,
     ) -> list[dict[str, Any]]:
-        if requests_yaml_path is None:
-            # Random requests
-            requests: list[dict[str, Any]] = [
+        if requests is None:
+            # One random request per dataset
+            requests = [
                 {"collection_id": collection_id} for collection_id in self.collecion_ids
             ]
-        else:
-            with open(requests_yaml_path, "r") as fp:
-                requests = yaml.safe_load(fp)
 
         reports = []
         for request in tqdm.tqdm(requests):
-            with tmp_working_dir():
+            with utils.tmp_working_dir():
                 report = self.get_download_report(
                     collection_id=request.pop("collection_id"),
                     expected_size=request.pop("expected_size", None),
                     expected_ext=request.pop("expected_ext", None),
+                    expected_time=request.pop("expected_time", None),
                     **request,
                 )
             reports.append(report)
 
-            with open(report_path, "w") as fp:
-                json.dump(reports, fp)
+            if report_path is not None:
+                with open(report_path, "w") as fp:
+                    json.dump(reports, fp)
         return reports

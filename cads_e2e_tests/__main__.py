@@ -1,18 +1,26 @@
 from typing import Optional
 
 import typer
+import yaml
 
-from .client import Client
+from .client import TestClient
 
 
 def cli(
     url: Optional[str] = None,  # noqa: UP007
     key: Optional[str] = None,  # noqa: UP007
+    requests_path: Optional[str] = None,  # noqa: UP007
     report_path: str = "e2e_report.json",
-    requests_yaml_path: Optional[str] = None,  # noqa: UP007
 ) -> None:
-    client = Client(url=url, key=key)
-    client.write_report(report_path=report_path, requests_yaml_path=requests_yaml_path)
+    client = TestClient(url=url, key=key)
+
+    if requests_path is not None:
+        with open(requests_path, "r") as fp:
+            requests = yaml.safe_load(fp)
+    else:
+        requests = None
+
+    client.make_report(requests=requests, report_path=report_path)
 
 
 def main() -> None:
