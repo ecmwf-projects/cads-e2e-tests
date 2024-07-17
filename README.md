@@ -18,18 +18,29 @@ cads-e2e-tests
 
 ```yaml
 # requests.yaml
+
+# Example 1:
 - collection_id: reanalysis-era5-single-levels
   parameters:
-    # optional parameters (random request if no parameter is provided)
+    # optional parameters (random request if no parameters are provided)
     variable: "2t"
     product_type: "reanalysis"
     date: "2012-12-01"
     time: "12:00"
   checks:
-    # optional checks (remove checks to switch off)
+    # optional checks (remove any check to disable)
     ext: .grib  # file extension
     size: 2076588  # file size in Bytes
     time: 60  # max elapsed time in seconds
+
+# Example 2:
+- collection_id: test-adaptor-dummy
+  parameters:
+    size: 1
+  checks:
+    ext: .grib
+    size: 1
+    time: 60
 ```
 
 ```
