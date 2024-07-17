@@ -1,14 +1,10 @@
-from __future__ import annotations
-
 import datetime
 import uuid
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from cads_e2e_tests.client import TestClient
+from cads_e2e_tests.client import TestClient
 
 
-def test_client_report(client: TestClient) -> None:
+def test_report(client: TestClient) -> None:
     request = {"collection_id": "test-adaptor-dummy", "size": 1}
     start = datetime.datetime.now()
     (actual_report,) = client.make_report(requests=[request])
@@ -56,3 +52,38 @@ def test_expected_time(client: TestClient) -> None:
     elapsed_time = report["elapsed_time"]
     (traceback,) = report["tracebacks"]
     assert f"AssertionError: {elapsed_time=} expected_time=0" in traceback
+
+
+def test_random_request(client: TestClient) -> None:
+    request = {"collection_id": "test-adaptor-url"}
+    (report,) = client.make_report(requests=[request])
+    expected_parameters = {
+        "_timestamp",
+        "month",
+        "reference_dataset",
+        "variable",
+        "version",
+        "year",
+    }
+    actual_parameters = set(report["request"])
+    assert expected_parameters == actual_parameters
+
+
+def test_no_requests(key: str, url: str) -> None:
+    class MockClient(TestClient):
+        @property
+        def collecion_ids(self) -> list[str]:
+            return ["test-adaptor-url"]
+
+    client = MockClient(key=key, url=url)
+    (report,) = client.make_report(requests=None)
+    expected_parameters = {
+        "_timestamp",
+        "month",
+        "reference_dataset",
+        "variable",
+        "version",
+        "year",
+    }
+    actual_parameters = set(report["request"])
+    assert expected_parameters == actual_parameters
