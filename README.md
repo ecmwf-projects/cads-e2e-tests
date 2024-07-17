@@ -11,7 +11,7 @@ cads-e2e-tests --help
 ### Test one random request per dataset
 
 ```
-cads-e2e-tests
+cads-e2e-tests --report-path random_report.json
 ```
 
 ### Specify which requests to test
@@ -44,7 +44,7 @@ cads-e2e-tests
 ```
 
 ```
-cads-e2e-tests --requests-path requests.yaml
+cads-e2e-tests --requests-path requests.yaml --report-path example_report.json
 ```
 
 ## Workflow for developers/contributors
