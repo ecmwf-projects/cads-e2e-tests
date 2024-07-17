@@ -26,7 +26,7 @@ cads-e2e-tests
     date: "2012-12-01"
     time: "12:00"
   checks:
-    # optional checks (retrieve only if not provided)
+    # optional checks (remove checks to switch off)
     ext: .grib  # file extension
     size: 2076588  # file size in Bytes
     time: 60  # max elapsed time in seconds
