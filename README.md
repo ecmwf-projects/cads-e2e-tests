@@ -8,6 +8,34 @@ CADS E2E Tests
 cads-e2e-tests --help
 ```
 
+### Test one random request per dataset
+
+```
+cads-e2e-tests
+```
+
+### Specify which requests to test
+
+```yaml
+# requests.yaml
+- collection_id: reanalysis-era5-single-levels
+  parameters:
+    # optional parameters (random request if no parameter is provided)
+    variable: "2t"
+    product_type: "reanalysis"
+    date: "2012-12-01"
+    time: "12:00"
+  checks:
+    # optional checks (retrieve only if not provided)
+    ext: .grib  # file extension
+    size: 2076588  # file size in Bytes
+    time: 60  # max elapsed time in seconds
+```
+
+```
+cads-e2e-tests --requests-path requests.yaml
+```
+
 ## Workflow for developers/contributors
 
 For best experience create a new conda environment (e.g. DEVELOP) with Python 3.11:

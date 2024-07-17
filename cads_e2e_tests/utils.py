@@ -39,20 +39,34 @@ def tmp_working_dir() -> Iterator[str]:
 
 def check_report(
     report: dict[str, Any],
-    expected_ext: str | None,
-    expected_size: int | None,
-    expected_time: float | None,
+    ext: str | None = None,
+    size: int | None = None,
+    time: float | None = None,
 ) -> dict[str, Any]:
-    if expected_ext is not None:
-        _, ext = os.path.splitext(report["target"])
-        assert ext == expected_ext, f"{ext=} {expected_ext=}"
+    if ext is not None:
+        _, actual_ext = os.path.splitext(report["target"])
+        assert actual_ext == ext, f"{actual_ext!r} != {ext!r}"
 
-    if expected_size is not None:
-        size = report["size"]
-        assert size == expected_size, f"{size=} {expected_size=}"
+    if size is not None:
+        actual_size = report["size"]
+        assert actual_size == size, f"{actual_size!r} != {size!r}"
 
-    if expected_time is not None:
-        elapsed_time = report["elapsed_time"]
-        assert elapsed_time <= expected_time, f"{elapsed_time=} {expected_time=}"
+    if time is not None:
+        actual_time = report["elapsed_time"]
+        assert actual_time <= time, f"{actual_time!r} > {time!r}"
 
     return report
+
+
+def validate_request(request: dict[str, Any]) -> None:
+    assert isinstance(request, dict)
+    assert "collection_id" in request
+    assert set(request) <= {"collection_id", "parameters", "checks"}
+
+    assert isinstance(request["collection_id"], str)
+
+    parameters = request.get("parameters", {})
+    assert isinstance(parameters, dict)
+
+    checks = request.get("checks", {})
+    assert set(checks) <= {"size", "ext", "time"}
