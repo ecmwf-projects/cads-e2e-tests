@@ -21,7 +21,7 @@ def catch_exception(
         yield tic
     except exceptions:
         logger.exception("")
-        report["tracebacks"].append(str(traceback.format_exc()))
+        report["tracebacks"].append(traceback.format_exc())
     else:
         toc = time.perf_counter()
         if elapsed_time:
