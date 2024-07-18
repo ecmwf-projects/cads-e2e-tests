@@ -26,6 +26,7 @@ def _licences_to_set_of_tuples(
 @attrs.define
 class TestClient(ApiClient):
     def __attrs_post_init__(self) -> None:
+        # TODO: Remove when anonymous user is implemented
         for licence in self.missing_licences:
             self.accept_licence(*licence)
 
