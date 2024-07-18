@@ -53,7 +53,7 @@ class TestClient(ApiClient):
                 parameters.pop(key)
         return parameters
 
-    def make_single_report(self, **request: Any) -> dict[str, Any]:
+    def make_single_report(self, cache: bool, **request: Any) -> dict[str, Any]:
         collection_id = request.pop("collection_id")
         parameters = request.pop("parameters", {})
         checks = request.pop("checks", {})
@@ -61,7 +61,8 @@ class TestClient(ApiClient):
 
         if not parameters:
             parameters = self.random_parameters(collection_id)
-        parameters.setdefault("_timestamp", datetime.datetime.now().isoformat())
+        if not cache:
+            parameters.setdefault("_timestamp", datetime.datetime.now().isoformat())
         report: dict[str, Any] = {
             "collection_id": collection_id,
             "parameters": parameters,
@@ -91,6 +92,7 @@ class TestClient(ApiClient):
         self,
         requests: Sequence[dict[str, Any]] | None = None,
         report_path: str | Path | None = None,
+        cache: bool = False,
     ) -> list[dict[str, Any]]:
         if requests is None:
             # One random request per dataset
@@ -107,7 +109,7 @@ class TestClient(ApiClient):
         reports = []
         for request in tqdm.tqdm(requests):
             with utils.tmp_working_dir():
-                report = self.make_single_report(**request)
+                report = self.make_single_report(cache=cache, **request)
             reports.append(report)
 
             if report_path is not None:

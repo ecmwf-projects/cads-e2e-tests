@@ -4,17 +4,19 @@ CADS E2E Tests
 
 ## Quick Start
 
+### Explore all available options:
+
 ```
 cads-e2e-tests --help
 ```
 
-### Test one random request per dataset
+### Test one random request per dataset:
 
 ```
 cads-e2e-tests --report-path random_report.json
 ```
 
-### Specify which requests to test
+### Specify which requests to test:
 
 ```yaml
 # requests.yaml

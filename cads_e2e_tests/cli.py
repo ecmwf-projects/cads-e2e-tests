@@ -20,6 +20,10 @@ def make_report(
     report_path: Annotated[
         str, Option(help="Path to write the report in JSON format")
     ] = "report.json",
+    cache: Annotated[
+        bool,
+        Option(help="Whether to invalidate the cache using the _timestamp parameter"),
+    ] = False,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -29,5 +33,5 @@ def make_report(
         requests = None
 
     client = TestClient(url=url, key=key)
-    report = client.make_report(requests=requests, report_path=report_path)
+    report = client.make_report(requests=requests, report_path=report_path, cache=cache)
     utils.print_passed_vs_failed(report)

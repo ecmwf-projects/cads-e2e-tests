@@ -42,6 +42,22 @@ def test_client_make_report(client: TestClient) -> None:
     assert actual_report == expected_report
 
 
+@pytest.mark.parametrize(
+    "cache,expected_parameters",
+    [
+        (True, {"size"}),
+        (False, {"size", "_timestamp"}),
+    ],
+)
+def test_client_cache(
+    client: TestClient, cache: bool, expected_parameters: set[str]
+) -> None:
+    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 1}}
+    (report,) = client.make_report(requests=[request], cache=cache)
+    actual_parameters = set(report["parameters"])
+    assert actual_parameters == expected_parameters
+
+
 def test_client_write_report(client: TestClient, tmp_path: Path) -> None:
     request = {"collection_id": "test-adaptor-dummy"}
     report_path = tmp_path / "report.json"
