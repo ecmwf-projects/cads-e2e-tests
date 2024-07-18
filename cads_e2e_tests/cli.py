@@ -3,6 +3,7 @@ from typing import Annotated, Optional
 import yaml
 from typer import Option
 
+from . import utils
 from .client import TestClient
 
 
@@ -28,4 +29,5 @@ def make_report(
         requests = None
 
     client = TestClient(url=url, key=key)
-    client.make_report(requests=requests, report_path=report_path)
+    report = client.make_report(requests=requests, report_path=report_path)
+    utils.print_passed_vs_failed(report)

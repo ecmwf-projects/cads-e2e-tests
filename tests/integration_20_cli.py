@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+from pytest import CaptureFixture
+
 from cads_e2e_tests.cli import make_report
 
 REQUESTS_YAML = """# requests.yaml
@@ -14,7 +16,9 @@ REQUESTS_YAML = """# requests.yaml
 """
 
 
-def test_cli_make_report_from_yaml(key: str, url: str, tmp_path: Path) -> None:
+def test_cli_make_report_from_yaml(
+    capsys: CaptureFixture[str], key: str, url: str, tmp_path: Path
+) -> None:
     requests_path = tmp_path / "requests.yaml"
     requests_path.write_text(REQUESTS_YAML)
     report_path = tmp_path / "report.json"
@@ -25,6 +29,9 @@ def test_cli_make_report_from_yaml(key: str, url: str, tmp_path: Path) -> None:
         requests_path=str(requests_path),
         report_path=str(report_path),
     )
+
+    captured = capsys.readouterr()
+    assert captured.out == "PASSED: 1 (100.0%)\n"
 
     (actual_report,) = json.load(report_path.open())
     expected_report = {

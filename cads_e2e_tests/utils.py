@@ -6,6 +6,8 @@ import time
 import traceback
 from typing import Any, Iterator, Type
 
+import typer
+
 
 @contextlib.contextmanager
 def catch_exception(
@@ -70,3 +72,14 @@ def validate_request(request: dict[str, Any]) -> None:
 
     checks = request.get("checks", {})
     assert set(checks) <= {"size", "ext", "time"}
+
+
+def print_passed_vs_failed(report: list[dict[str, Any]]) -> None:
+    failed = sum(True for request in report if request["tracebacks"])
+    passed = len(report) - failed
+    failed_perc = failed * 100 / len(report)
+    passed_perc = passed * 100 / len(report)
+    if failed:
+        typer.secho(f"FAILED: {failed} ({failed_perc:.1f}%)", fg=typer.colors.RED)
+    if passed:
+        typer.secho(f"PASSED: {passed} ({passed_perc:.1f}%)", fg=typer.colors.GREEN)
