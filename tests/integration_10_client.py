@@ -11,7 +11,7 @@ from cads_e2e_tests.client import TestClient
 
 
 def test_client_make_report(client: TestClient) -> None:
-    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 1}}
+    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 0}}
     start = datetime.datetime.now()
     (actual_report,) = client.make_report(requests=[request])
     end = datetime.datetime.now()
@@ -31,12 +31,13 @@ def test_client_make_report(client: TestClient) -> None:
 
     expected_report = {
         "collection_id": "test-adaptor-dummy",
-        "parameters": {"size": 1, "_timestamp": _timestamp},
+        "parameters": {"size": 0, "_timestamp": _timestamp},
         "checks": {},
+        "checksum": "d41d8cd98f00b204e9800998ecf8427e",
         "tracebacks": [],
         "request_uid": request_uid,
         "target": target,
-        "size": 1,
+        "size": 0,
         "elapsed_time": elapsed_time,
     }
     assert actual_report == expected_report
@@ -52,7 +53,7 @@ def test_client_make_report(client: TestClient) -> None:
 def test_client_cache(
     client: TestClient, cache: bool, expected_parameters: set[str]
 ) -> None:
-    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 1}}
+    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 0}}
     (report,) = client.make_report(requests=[request], cache=cache)
     actual_parameters = set(report["parameters"])
     assert actual_parameters == expected_parameters
@@ -72,9 +73,16 @@ def test_client_write_report(client: TestClient, tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     "checks,expected_error",
     [
-        ({"ext": ".foo"}, r"AssertionError: '.grib' != '.foo'"),
-        ({"size": 2}, r"AssertionError: 1 != 2"),
-        ({"time": 0.0}, r"AssertionError: .* > 0.0"),
+        (
+            {"ext": ".foo"},
+            r"cads_e2e_tests.exceptions.ExtensionError: '.grib' != '.foo'",
+        ),
+        ({"size": 1}, r"cads_e2e_tests.exceptions.SizeError: 0 != 1"),
+        ({"time": 0.0}, r"cads_e2e_tests.exceptions.TimeError: .* > 0.0"),
+        (
+            {"checksum": "foo"},
+            r"cads_e2e_tests.exceptions.ChecksumError: 'd41d8cd98f00b204e9800998ecf8427e' != 'foo'",
+        ),
     ],
 )
 def test_client_checks(
@@ -82,7 +90,7 @@ def test_client_checks(
 ) -> None:
     request = {
         "collection_id": "test-adaptor-dummy",
-        "parameters": {"size": 1},
+        "parameters": {"size": 0},
         "checks": checks,
     }
     (report,) = client.make_report(requests=[request])

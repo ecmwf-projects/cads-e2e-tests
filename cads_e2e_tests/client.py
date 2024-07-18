@@ -1,7 +1,6 @@
 import datetime
 import json
 import logging
-import os
 import random
 from pathlib import Path
 from typing import Any, Sequence
@@ -11,7 +10,7 @@ import tqdm
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
 
-from . import utils
+from . import exceptions, utils
 
 LOGGER = logging.getLogger(__name__)
 RETRY_OPTIONS = {"maximum_tries": 0}
@@ -72,18 +71,23 @@ class TestClient(ApiClient):
         }
 
         with utils.catch_exception(
-            report, LOGGER, elapsed_time=True, exceptions=(Exception,)
+            report,
+            LOGGER,
+            elapsed_time=True,
+            allowed_exceptions=(Exception,),
         ):
             remote = self.collection(collection_id).submit(**parameters)
             report["request_uid"] = remote.request_uid
 
             target = remote.download(retry_options=RETRY_OPTIONS)
-            report["target"] = target
-            report["size"] = os.path.getsize(target)
+        report.update(utils.get_target_info(target))
 
         if not report["tracebacks"]:
             with utils.catch_exception(
-                report, LOGGER, elapsed_time=False, exceptions=(AssertionError,)
+                report,
+                LOGGER,
+                elapsed_time=False,
+                allowed_exceptions=(exceptions.CheckError,),
             ):
                 report = utils.check_report(report, **checks)
 

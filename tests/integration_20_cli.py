@@ -8,11 +8,12 @@ from cads_e2e_tests.cli import make_report
 REQUESTS_YAML = """# requests.yaml
 - collection_id: test-adaptor-dummy
   parameters:
-    size: 1
+    size: 0
   checks:
     ext: .grib
-    size: 1
+    size: 0
     time: 60
+    checksum: d41d8cd98f00b204e9800998ecf8427e
 """
 
 
@@ -37,14 +38,20 @@ def test_cli_make_report_from_yaml(
     expected_report = {
         "collection_id": "test-adaptor-dummy",
         "parameters": {
-            "size": 1,
+            "size": 0,
             "_timestamp": actual_report["parameters"]["_timestamp"],
         },
-        "checks": {"ext": ".grib", "size": 1, "time": 60},
+        "checks": {
+            "ext": ".grib",
+            "size": 0,
+            "time": 60,
+            "checksum": "d41d8cd98f00b204e9800998ecf8427e",
+        },
+        "checksum": "d41d8cd98f00b204e9800998ecf8427e",
         "tracebacks": [],
         "request_uid": actual_report["request_uid"],
         "target": actual_report["target"],
-        "size": 1,
+        "size": 0,
         "elapsed_time": actual_report["elapsed_time"],
     }
     assert actual_report == expected_report
