@@ -83,6 +83,7 @@ def validate_request(request: dict[str, Any]) -> None:
     assert isinstance(parameters, dict)
 
     checks = request.get("checks", {})
+    assert isinstance(checks, dict)
     assert set(checks) <= {"size", "ext", "time", "checksum"}
 
 
