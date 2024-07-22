@@ -35,11 +35,15 @@ def make_reports(
     ] = None,
     reports_path: Annotated[
         str, Option(help="Path to write the reports in JSON format")
-    ] = "report.json",
+    ] = "reports.json",
     invalidate_cache: Annotated[
         bool,
         Option(help="Whether to invalidate the cache using the _timestamp parameter"),
     ] = True,
+    n_jobs: Annotated[
+        int,
+        Option(help="Number of concurrent requests"),
+    ] = 1,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -53,5 +57,6 @@ def make_reports(
         requests=requests,
         reports_path=reports_path,
         invalidate_cache=invalidate_cache,
+        n_jobs=n_jobs,
     )
     echo_passed_vs_failed(reports)

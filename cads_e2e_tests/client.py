@@ -1,12 +1,13 @@
 import datetime
 import logging
+import os
 import random
 import time
 from pathlib import Path
 from typing import Any, Sequence
 
 import attrs
-import tqdm
+import joblib
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
 
@@ -96,12 +97,21 @@ class TestClient(ApiClient):
         report.run_checks()
         return report
 
+    @joblib.delayed  # type: ignore[misc]
+    def _delayed_make_report(self, request: Request, invalidate_cache: bool) -> Report:
+        with utils.tmp_working_dir():
+            return self._make_report(request=request, invalidate_cache=invalidate_cache)
+
     def make_reports(
         self,
         requests: Sequence[Request] | None = None,
         reports_path: str | Path | None = None,
         invalidate_cache: bool = True,
+        n_jobs: int = 1,
     ) -> list[Report]:
+        if reports_path and os.path.exists(reports_path):
+            raise FileExistsError(reports_path)
+
         if requests is None:
             # One random request per dataset
             requests = [
@@ -109,15 +119,13 @@ class TestClient(ApiClient):
                 for collection_id in self.collecion_ids
             ]
 
-        reports = []
-        for request in tqdm.tqdm(requests):
-            with utils.tmp_working_dir():
-                report = self._make_report(
-                    request=request, invalidate_cache=invalidate_cache
-                )
-            reports.append(report)
-
-            if reports_path is not None:
-                with open(reports_path, "w") as fp:
-                    models.dump_reports(reports, fp)
+        reports: list[Report] = joblib.Parallel(n_jobs=n_jobs)(
+            self._delayed_make_report(
+                request=request, invalidate_cache=invalidate_cache
+            )
+            for request in requests
+        )
+        if reports_path:
+            with open(reports_path, "w") as fp:
+                models.dump_reports(reports, fp)
         return reports
