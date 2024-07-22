@@ -16,6 +16,7 @@ classifiers = [
 dependencies = [
   "attrs",
   "cads-api-client",
+  "joblib",
   "pydantic",
   "pyyaml",
   "tqdm",
@@ -35,6 +36,12 @@ branch = true
 
 [tool.mypy]
 strict = true
+
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = [
+  "joblib"
+]
 
 [tool.ruff]
 # Same as Black.
