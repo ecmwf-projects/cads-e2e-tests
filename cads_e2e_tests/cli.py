@@ -1,13 +1,29 @@
-from typing import Annotated, Optional
+from typing import Annotated, BinaryIO, Optional, TextIO
 
+import typer
 import yaml
 from typer import Option
 
-from . import utils
 from .client import TestClient
+from .models import Report, Request
 
 
-def make_report(
+def echo_passed_vs_failed(reports: list[Report]) -> None:
+    failed = sum(True for request in reports if request.tracebacks)
+    passed = len(reports) - failed
+    failed_perc = failed * 100 / len(reports)
+    passed_perc = passed * 100 / len(reports)
+    if failed:
+        typer.secho(f"FAILED: {failed} ({failed_perc:.1f}%)", fg=typer.colors.RED)
+    if passed:
+        typer.secho(f"PASSED: {passed} ({passed_perc:.1f}%)", fg=typer.colors.GREEN)
+
+
+def load_requests(fp: TextIO | BinaryIO) -> list[Request]:
+    return [Request(**request) for request in yaml.safe_load(fp)]
+
+
+def make_reports(
     url: Annotated[Optional[str], Option(help="CADS api url")] = None,  # noqa: UP007
     key: Annotated[Optional[str], Option(help="CADS api key")] = None,  # noqa: UP007
     requests_path: Annotated[
@@ -17,21 +33,25 @@ def make_report(
             show_default="random requests",
         ),
     ] = None,
-    report_path: Annotated[
+    reports_path: Annotated[
         str, Option(help="Path to write the report in JSON format")
     ] = "report.json",
-    cache: Annotated[
+    invalidate_cache: Annotated[
         bool,
         Option(help="Whether to invalidate the cache using the _timestamp parameter"),
-    ] = False,
+    ] = True,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
         with open(requests_path, "r") as fp:
-            requests = yaml.safe_load(fp)
+            requests = load_requests(fp)
     else:
         requests = None
 
     client = TestClient(url=url, key=key)
-    report = client.make_report(requests=requests, report_path=report_path, cache=cache)
-    utils.print_passed_vs_failed(report)
+    reports = client.make_reports(
+        requests=requests,
+        reports_path=reports_path,
+        invalidate_cache=invalidate_cache,
+    )
+    echo_passed_vs_failed(reports)

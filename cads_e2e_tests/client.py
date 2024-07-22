@@ -1,7 +1,7 @@
 import datetime
-import json
 import logging
 import random
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -10,7 +10,8 @@ import tqdm
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
 
-from . import exceptions, utils
+from . import models, utils
+from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
 RETRY_OPTIONS = {"maximum_tries": 0}
@@ -53,71 +54,70 @@ class TestClient(ApiClient):
                 parameters.pop(key)
         return parameters
 
-    def make_single_report(self, cache: bool, **request: Any) -> dict[str, Any]:
-        collection_id = request.pop("collection_id")
-        parameters = request.pop("parameters", {})
-        checks = request.pop("checks", {})
-        assert not request
-
+    def update_request_parameters(
+        self,
+        request: Request,
+        invalidate_cache: bool,
+    ) -> Request:
+        parameters = dict(request.parameters)
         if not parameters:
-            parameters = self.random_parameters(collection_id)
-        if not cache:
+            parameters = self.random_parameters(request.collection_id)
+        if invalidate_cache:
             parameters.setdefault("_timestamp", datetime.datetime.now().isoformat())
-        report: dict[str, Any] = {
-            "collection_id": collection_id,
-            "parameters": parameters,
-            "checks": checks,
-            "tracebacks": [],
-        }
+        return Request(
+            parameters=parameters,
+            **request.model_dump(exclude={"parameters"}),
+        )
 
-        with utils.catch_exception(
-            report,
-            LOGGER,
-            elapsed_time=True,
-            allowed_exceptions=(Exception,),
-        ):
-            remote = self.collection(collection_id).submit(**parameters)
-            report["request_uid"] = remote.request_uid
+    def _make_report(self, request: Request, invalidate_cache: bool) -> Report:
+        request = self.update_request_parameters(request, invalidate_cache)
+        report = Report(request=request)
 
-            target = remote.download(retry_options=RETRY_OPTIONS)
-        report.update(utils.get_target_info(target))
+        tic = time.perf_counter()
+        with utils.catch_exceptions(report.tracebacks, logger=LOGGER):
+            remote = self.collection(request.collection_id).submit(**request.parameters)
+            report = Report(
+                request_uid=remote.request_uid,
+                **report.model_dump(exclude={"request_uid"}),
+            )
+            target = utils.Target(remote.download(retry_options=RETRY_OPTIONS))
+        toc = time.perf_counter()
 
-        if not report["tracebacks"]:
-            with utils.catch_exception(
-                report,
-                LOGGER,
-                elapsed_time=False,
-                allowed_exceptions=(exceptions.CheckError,),
-            ):
-                report = utils.check_report(report, **checks)
+        if report.tracebacks:
+            return report
 
+        report = Report(
+            time=toc - tic,
+            extension=target.extension,
+            size=target.size,
+            checksum=target.checksum,
+            **report.model_dump(exclude={"time", "extension", "size", "checksum"}),
+        )
+        report.run_checks()
         return report
 
-    def make_report(
+    def make_reports(
         self,
-        requests: Sequence[dict[str, Any]] | None = None,
-        report_path: str | Path | None = None,
-        cache: bool = False,
-    ) -> list[dict[str, Any]]:
+        requests: Sequence[Request] | None = None,
+        reports_path: str | Path | None = None,
+        invalidate_cache: bool = True,
+    ) -> list[Report]:
         if requests is None:
             # One random request per dataset
             requests = [
-                {"collection_id": collection_id} for collection_id in self.collecion_ids
+                Request(collection_id=collection_id)
+                for collection_id in self.collecion_ids
             ]
-
-        for request in requests:
-            try:
-                utils.validate_request(request)
-            except AssertionError as exc:
-                raise ValueError(f"Invalid request: {request}") from exc
 
         reports = []
         for request in tqdm.tqdm(requests):
             with utils.tmp_working_dir():
-                report = self.make_single_report(cache=cache, **request)
+                report = self._make_report(
+                    request=request, invalidate_cache=invalidate_cache
+                )
             reports.append(report)
 
-            if report_path is not None:
-                with open(report_path, "w") as fp:
-                    json.dump(reports, fp)
+            if reports_path is not None:
+                with open(reports_path, "w") as fp:
+                    models.dump_reports(reports, fp)
         return reports

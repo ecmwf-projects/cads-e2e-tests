@@ -22,4 +22,6 @@ except ImportError:  # pragma: no cover
     # Local copy or not installed with setuptools
     __version__ = "999"
 
-__all__ = ["__version__"]
+from .models import load_reports
+
+__all__ = ["load_reports", "__version__"]

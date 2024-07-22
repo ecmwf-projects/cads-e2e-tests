@@ -1,72 +1,81 @@
 import datetime
-import json
 import re
 import uuid
 from pathlib import Path
-from typing import Any
 
 import pytest
 
 from cads_e2e_tests.client import TestClient
+from cads_e2e_tests.models import Checks, Report, Request, load_reports
 
 
-def test_client_make_report(client: TestClient) -> None:
-    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 0}}
+@pytest.fixture
+def dummy_request() -> Request:
+    return Request(
+        collection_id="test-adaptor-dummy",
+        parameters={"size": 0},
+    )
+
+
+def test_client_make_reports(client: TestClient, dummy_request: Request) -> None:
     start = datetime.datetime.now()
-    (actual_report,) = client.make_report(requests=[request])
+    (actual_report,) = client.make_reports(requests=[dummy_request])
     end = datetime.datetime.now()
 
-    _timestamp = actual_report["parameters"]["_timestamp"]
-    timestamp = datetime.datetime.fromisoformat(_timestamp)
-    assert start < timestamp < end
+    _timestamp = actual_report.request.parameters["_timestamp"]
+    assert start < datetime.datetime.fromisoformat(_timestamp) < end
 
-    request_uid = actual_report["request_uid"]
+    request_uid = actual_report.request_uid
     assert uuid.UUID(request_uid)
 
-    target = actual_report["target"]
-    assert target.endswith(".grib")
+    time = actual_report.time
+    assert isinstance(time, float)
+    assert time > 0
 
-    elapsed_time = actual_report["elapsed_time"]
-    assert isinstance(elapsed_time, float)
-
-    expected_report = {
-        "collection_id": "test-adaptor-dummy",
-        "parameters": {"size": 0, "_timestamp": _timestamp},
-        "checks": {},
-        "checksum": "d41d8cd98f00b204e9800998ecf8427e",
-        "tracebacks": [],
-        "request_uid": request_uid,
-        "target": target,
-        "size": 0,
-        "elapsed_time": elapsed_time,
-    }
+    expected_report = Report(
+        request=Request(
+            collection_id="test-adaptor-dummy",
+            parameters={"size": 0, "_timestamp": _timestamp},
+        ),
+        request_uid=request_uid,
+        extension=".grib",
+        size=0,
+        checksum="d41d8cd98f00b204e9800998ecf8427e",
+        time=time,
+    )
     assert actual_report == expected_report
 
 
 @pytest.mark.parametrize(
-    "cache,expected_parameters",
+    "invalidate_cache,expected_parameters",
     [
-        (True, {"size"}),
-        (False, {"size", "_timestamp"}),
+        (False, {"size"}),
+        (True, {"size", "_timestamp"}),
     ],
 )
 def test_client_cache(
-    client: TestClient, cache: bool, expected_parameters: set[str]
+    client: TestClient,
+    dummy_request: Request,
+    invalidate_cache: bool,
+    expected_parameters: set[str],
 ) -> None:
-    request = {"collection_id": "test-adaptor-dummy", "parameters": {"size": 0}}
-    (report,) = client.make_report(requests=[request], cache=cache)
-    actual_parameters = set(report["parameters"])
+    (report,) = client.make_reports(
+        requests=[dummy_request],
+        invalidate_cache=invalidate_cache,
+    )
+    actual_parameters = set(report.request.parameters)
     assert actual_parameters == expected_parameters
 
 
-def test_client_write_report(client: TestClient, tmp_path: Path) -> None:
-    request = {"collection_id": "test-adaptor-dummy"}
+def test_client_write_reports(
+    client: TestClient, dummy_request: Request, tmp_path: Path
+) -> None:
     report_path = tmp_path / "report.json"
-    expected_report = client.make_report(
-        requests=[request],
-        report_path=report_path,
+    expected_report = client.make_reports(
+        requests=[dummy_request],
+        reports_path=report_path,
     )
-    actual_report = json.load(report_path.open())
+    actual_report = load_reports(report_path.open())
     assert expected_report == actual_report
 
 
@@ -74,38 +83,47 @@ def test_client_write_report(client: TestClient, tmp_path: Path) -> None:
     "checks,expected_error",
     [
         (
-            {"ext": ".foo"},
-            r"cads_e2e_tests.exceptions.ExtensionError: '.grib' != '.foo'",
+            Checks(checksum="foo"),
+            (
+                r"cads_e2e_tests.exceptions.ChecksumError: "
+                r"actual='d41d8cd98f00b204e9800998ecf8427e' expected='foo'"
+            ),
         ),
-        ({"size": 1}, r"cads_e2e_tests.exceptions.SizeError: 0 != 1"),
-        ({"time": 0.0}, r"cads_e2e_tests.exceptions.TimeError: .* > 0.0"),
         (
-            {"checksum": "foo"},
-            r"cads_e2e_tests.exceptions.ChecksumError: 'd41d8cd98f00b204e9800998ecf8427e' != 'foo'",
+            Checks(extension=".foo"),
+            r"cads_e2e_tests.exceptions.ExtensionError: actual='.grib' expected='.foo'",
+        ),
+        (
+            Checks(size=1),
+            r"cads_e2e_tests.exceptions.SizeError: actual=0 expected=1",
+        ),
+        (
+            Checks(time=0.0),
+            r"cads_e2e_tests.exceptions.TimeError: actual=.* expected=0.0",
         ),
     ],
 )
 def test_client_checks(
-    client: TestClient, checks: dict[str, Any], expected_error: str
+    client: TestClient, dummy_request: Request, checks: Checks, expected_error: str
 ) -> None:
-    request = {
-        "collection_id": "test-adaptor-dummy",
-        "parameters": {"size": 0},
-        "checks": checks,
-    }
-    (report,) = client.make_report(requests=[request])
-    assert report["checks"] == checks
+    request_with_checks = Request(
+        checks=checks, **dummy_request.model_dump(exclude={"checks"})
+    )
 
-    (traceback,) = report["tracebacks"]
+    (report,) = client.make_reports(requests=[request_with_checks])
+    assert report.request.checks == checks
+
+    print(report.tracebacks)
+    (traceback,) = report.tracebacks
     *_, actual_error = traceback.splitlines()
     assert re.compile(expected_error).match(actual_error)
 
 
 def test_client_random_request(client: TestClient) -> None:
-    request = {"collection_id": "test-adaptor-url"}
-    (report,) = client.make_report(requests=[request])
-    assert len(report["parameters"]) > 1
-    assert not report["tracebacks"]
+    request = Request(collection_id="test-adaptor-url")
+    (report,) = client.make_reports(requests=[request])
+    assert len(report.request.parameters) > 1
+    assert not report.tracebacks
 
 
 def test_client_no_requests(key: str, url: str) -> None:
@@ -115,6 +133,6 @@ def test_client_no_requests(key: str, url: str) -> None:
             return ["test-adaptor-url"]
 
     client = MockClient(key=key, url=url)
-    (report,) = client.make_report(requests=None)
-    assert len(report["parameters"]) > 1
-    assert not report["tracebacks"]
+    (report,) = client.make_reports(requests=None)
+    assert len(report.request.parameters) > 1
+    assert not report.tracebacks

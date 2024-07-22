@@ -13,7 +13,7 @@ cads-e2e-tests --help
 ### Test one random request per dataset:
 
 ```
-cads-e2e-tests --report-path random_report.json
+cads-e2e-tests --reports-path random_reports.json
 ```
 
 ### Specify which requests to test:
@@ -31,7 +31,7 @@ cads-e2e-tests --report-path random_report.json
     time: "12:00"
   checks:
     # optional checks (remove any check to disable)
-    ext: .grib  # file extension
+    extension: .grib  # file extension
     size: 2076588  # file size in Bytes
     time: 60  # max elapsed time in seconds
     checksum: 01683b3d69dec4c7221e524e3f6697dd  # md5 hash
@@ -41,14 +41,14 @@ cads-e2e-tests --report-path random_report.json
   parameters:
     size: 0
   checks:
-    ext: .grib
+    extension: .grib
     size: 0
     time: 60
     checksum: d41d8cd98f00b204e9800998ecf8427e
 ```
 
 ```
-cads-e2e-tests --requests-path requests.yaml --report-path example_report.json
+cads-e2e-tests --requests-path requests.yaml --reports-path example_reports.json
 ```
 
 ## Workflow for developers/contributors

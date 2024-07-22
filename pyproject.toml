@@ -16,6 +16,7 @@ classifiers = [
 dependencies = [
   "attrs",
   "cads-api-client",
+  "pydantic",
   "pyyaml",
   "tqdm",
   "typer"
