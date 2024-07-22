@@ -115,6 +115,7 @@ class TestClient(ApiClient):
         reports_path: str | Path | None = None,
         invalidate_cache: bool = True,
         n_jobs: int = 1,
+        verbose: int = 0,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -126,7 +127,8 @@ class TestClient(ApiClient):
                 for collection_id in self.collecion_ids
             ]
 
-        reports: list[Report] = joblib.Parallel(n_jobs=n_jobs)(
+        parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
+        reports: list[Report] = parallel(
             self._delayed_make_report(
                 request=request, invalidate_cache=invalidate_cache
             )

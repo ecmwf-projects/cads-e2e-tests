@@ -3,6 +3,7 @@ import logging
 from typing import Any, BinaryIO, ContextManager, TextIO
 
 import pydantic_core
+import yaml
 from pydantic import BaseModel
 
 from . import exceptions, utils
@@ -83,4 +84,12 @@ def load_reports(fp: TextIO | BinaryIO) -> list[Report]:
 
 
 def dump_reports(reports: list[Report], fp: TextIO | BinaryIO) -> None:
-    return json.dump(pydantic_core.to_jsonable_python(reports), fp)
+    json.dump(pydantic_core.to_jsonable_python(reports), fp)
+
+
+def load_requests(fp: TextIO | BinaryIO) -> list[Request]:
+    return [Request(**request) for request in yaml.safe_load(fp)]
+
+
+def dump_requests(requests: list[Request], fp: TextIO | BinaryIO) -> None:
+    yaml.safe_dump([request.model_dump() for request in requests], fp)

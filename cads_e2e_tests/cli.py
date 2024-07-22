@@ -1,11 +1,11 @@
-from typing import Annotated, BinaryIO, Optional, TextIO
+from typing import Annotated, Optional
 
 import typer
-import yaml
 from typer import Option
 
+from . import models
 from .client import TestClient
-from .models import Report, Request
+from .models import Report
 
 
 def echo_passed_vs_failed(reports: list[Report]) -> None:
@@ -17,10 +17,6 @@ def echo_passed_vs_failed(reports: list[Report]) -> None:
         typer.secho(f"FAILED: {failed} ({failed_perc:.1f}%)", fg=typer.colors.RED)
     if passed:
         typer.secho(f"PASSED: {passed} ({passed_perc:.1f}%)", fg=typer.colors.GREEN)
-
-
-def load_requests(fp: TextIO | BinaryIO) -> list[Request]:
-    return [Request(**request) for request in yaml.safe_load(fp)]
 
 
 def make_reports(
@@ -44,11 +40,15 @@ def make_reports(
         int,
         Option(help="Number of concurrent requests"),
     ] = 1,
+    verbose: Annotated[
+        int,
+        Option(help="The verbosity level"),
+    ] = 10,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
         with open(requests_path, "r") as fp:
-            requests = load_requests(fp)
+            requests = models.load_requests(fp)
     else:
         requests = None
 
@@ -58,5 +58,6 @@ def make_reports(
         reports_path=reports_path,
         invalidate_cache=invalidate_cache,
         n_jobs=n_jobs,
+        verbose=verbose,
     )
     echo_passed_vs_failed(reports)

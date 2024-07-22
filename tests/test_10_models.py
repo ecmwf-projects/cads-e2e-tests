@@ -42,3 +42,11 @@ def test_dump_and_load_reports(report: Report, tmp_path: Path) -> None:
 
     actual_reports = models.load_reports(report_path.open())
     assert actual_reports == expected_reports
+
+
+def test_dump_and_load_requests(report: Report, tmp_path: Path) -> None:
+    expected_requests = [report.request]
+    requests_path = tmp_path / "requests.yaml"
+    models.dump_requests(expected_requests, requests_path.open("w"))
+    actual_requests = models.load_requests(requests_path.open("r"))
+    assert actual_requests == expected_requests
