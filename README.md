@@ -31,7 +31,7 @@ cads-e2e-tests --reports-path random_reports.json
     time: "12:00"
   checks:
     # optional checks (remove any check to disable)
-    checksum: 01683b3d69dec4c7221e524e3f6697dd  # md5 hash
+    checksum: 01683b3d69dec4c7221e524e3f6697dd  # file md5 hash
     extension: .grib  # file extension
     size: 2076588  # file size in Bytes
     time: 60  # max elapsed time in seconds
