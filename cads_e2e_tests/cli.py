@@ -34,7 +34,7 @@ def make_reports(
         ),
     ] = None,
     reports_path: Annotated[
-        str, Option(help="Path to write the report in JSON format")
+        str, Option(help="Path to write the reports in JSON format")
     ] = "report.json",
     invalidate_cache: Annotated[
         bool,
