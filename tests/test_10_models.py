@@ -21,16 +21,18 @@ def report() -> Report:
 
 
 def test_report_run_checks(report: Report) -> None:
-    report.run_checks()
-
     expected_tracebacks = [
         "cads_e2e_tests.exceptions.ChecksumError: actual='bar' expected='foo'",
         "cads_e2e_tests.exceptions.ExtensionError: actual='.bar' expected='.foo'",
         "cads_e2e_tests.exceptions.SizeError: actual=1 expected=0",
         "cads_e2e_tests.exceptions.TimeError: actual=1.0 expected=0.1",
     ]
-    actual_tracebacks = [traceback.splitlines()[-1] for traceback in report.tracebacks]
+
+    actual_tracebacks = [
+        traceback.splitlines()[-1] for traceback in report.run_checks()
+    ]
     assert expected_tracebacks == actual_tracebacks
+    assert report.tracebacks == []
 
 
 def test_dump_and_load_reports(report: Report, tmp_path: Path) -> None:

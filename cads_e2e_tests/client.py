@@ -75,7 +75,8 @@ class TestClient(ApiClient):
         report = Report(request=request)
 
         tic = time.perf_counter()
-        with utils.catch_exceptions(report.tracebacks, logger=LOGGER):
+        tracebacks: list[str] = []
+        with utils.catch_exceptions(tracebacks, logger=LOGGER):
             remote = self.collection(request.collection_id).submit(**request.parameters)
             report = Report(
                 request_uid=remote.request_uid,
@@ -84,8 +85,11 @@ class TestClient(ApiClient):
             target = utils.Target(remote.download(retry_options=RETRY_OPTIONS))
         toc = time.perf_counter()
 
-        if report.tracebacks:
-            return report
+        if tracebacks:
+            return Report(
+                tracebacks=tracebacks,
+                **report.model_dump(exclude={"tracebacks"}),
+            )
 
         report = Report(
             time=toc - tic,
@@ -94,8 +98,11 @@ class TestClient(ApiClient):
             checksum=target.checksum,
             **report.model_dump(exclude={"time", "extension", "size", "checksum"}),
         )
-        report.run_checks()
-        return report
+        tracebacks = report.run_checks()
+        return Report(
+            tracebacks=tracebacks,
+            **report.model_dump(exclude={"tracebacks"}),
+        )
 
     @joblib.delayed  # type: ignore[misc]
     def _delayed_make_report(self, request: Request, invalidate_cache: bool) -> Report:

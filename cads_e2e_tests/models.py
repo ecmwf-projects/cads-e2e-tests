@@ -52,27 +52,30 @@ class Report(BaseModel):
     size: int | None = None
     time: float | None = None
 
-    def catch_exceptions(self) -> ContextManager[None]:
+    def catch_exceptions(self, tracebacks: list[str]) -> ContextManager[None]:
         return utils.catch_exceptions(
-            self.tracebacks, exceptions=(exceptions.CheckError,), logger=LOGGER
+            tracebacks, exceptions=(exceptions.CheckError,), logger=LOGGER
         )
 
-    def run_checks(self) -> None:
+    def run_checks(self) -> list[str]:
+        tracebacks = list(self.tracebacks)
         if self.checksum is not None:
-            with self.catch_exceptions():
+            with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_checksum(self.checksum)
 
         if self.extension is not None:
-            with self.catch_exceptions():
+            with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_extension(self.extension)
 
         if self.size is not None:
-            with self.catch_exceptions():
+            with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_size(self.size)
 
         if self.time is not None:
-            with self.catch_exceptions():
+            with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_time(self.time)
+
+        return tracebacks
 
 
 def load_reports(fp: TextIO | BinaryIO) -> list[Report]:
