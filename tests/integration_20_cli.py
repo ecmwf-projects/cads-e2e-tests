@@ -30,6 +30,7 @@ def test_cli_make_report_from_yaml(
         url=url,
         requests_path=str(requests_path),
         reports_path=str(report_path),
+        invalidate_cache=False,
     )
 
     captured = capsys.readouterr()
@@ -39,10 +40,7 @@ def test_cli_make_report_from_yaml(
     expected_report = Report(
         request=Request(
             collection_id="test-adaptor-dummy",
-            parameters={
-                "size": 0,
-                "_timestamp": actual_report.request.parameters["_timestamp"],
-            },
+            parameters={"size": 0},
             checks=Checks(
                 extension=".grib",
                 size=0,

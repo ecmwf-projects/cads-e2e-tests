@@ -1,4 +1,3 @@
-import datetime
 import re
 import uuid
 from pathlib import Path
@@ -18,12 +17,9 @@ def dummy_request() -> Request:
 
 
 def test_client_make_reports(client: TestClient, dummy_request: Request) -> None:
-    start = datetime.datetime.now()
-    (actual_report,) = client.make_reports(requests=[dummy_request])
-    end = datetime.datetime.now()
-
-    _timestamp = actual_report.request.parameters["_timestamp"]
-    assert start < datetime.datetime.fromisoformat(_timestamp) < end
+    (actual_report,) = client.make_reports(
+        requests=[dummy_request], invalidate_cache=False
+    )
 
     request_uid = actual_report.request_uid
     assert uuid.UUID(request_uid)
@@ -35,7 +31,7 @@ def test_client_make_reports(client: TestClient, dummy_request: Request) -> None
     expected_report = Report(
         request=Request(
             collection_id="test-adaptor-dummy",
-            parameters={"size": 0, "_timestamp": _timestamp},
+            parameters={"size": 0},
         ),
         request_uid=request_uid,
         extension=".grib",
@@ -74,6 +70,7 @@ def test_client_write_reports(
     expected_report = client.make_reports(
         requests=[dummy_request],
         reports_path=report_path,
+        invalidate_cache=False,
     )
     actual_report = load_reports(report_path.open())
     assert expected_report == actual_report
@@ -110,7 +107,9 @@ def test_client_checks(
         checks=checks, **dummy_request.model_dump(exclude={"checks"})
     )
 
-    (report,) = client.make_reports(requests=[request_with_checks])
+    (report,) = client.make_reports(
+        requests=[request_with_checks], invalidate_cache=False
+    )
     assert report.request.checks == checks
 
     print(report.tracebacks)
@@ -121,7 +120,7 @@ def test_client_checks(
 
 def test_client_random_request(client: TestClient) -> None:
     request = Request(collection_id="test-adaptor-url")
-    (report,) = client.make_reports(requests=[request])
+    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
@@ -133,6 +132,6 @@ def test_client_no_requests(key: str, url: str) -> None:
             return ["test-adaptor-url"]
 
     client = MockClient(key=key, url=url)
-    (report,) = client.make_reports(requests=None)
+    (report,) = client.make_reports(requests=None, invalidate_cache=False)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks

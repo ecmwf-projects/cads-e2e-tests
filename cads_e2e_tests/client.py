@@ -74,14 +74,19 @@ class TestClient(ApiClient):
         request = self.update_request_parameters(request, invalidate_cache)
         report = Report(request=request)
 
-        tic = time.perf_counter()
         tracebacks: list[str] = []
         with utils.catch_exceptions(tracebacks, logger=LOGGER):
             remote = self.collection(request.collection_id).submit(**request.parameters)
+            request_uid = remote.request_uid
+            LOGGER.debug(f"{request_uid=}")
             report = Report(
-                request_uid=remote.request_uid,
+                request_uid=request_uid,
                 **report.model_dump(exclude={"request_uid"}),
             )
+            while remote.status == "accepted":
+                time.sleep(1)
+
+            tic = time.perf_counter()
             target = utils.Target(remote.download(retry_options=RETRY_OPTIONS))
         toc = time.perf_counter()
 

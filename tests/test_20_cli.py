@@ -17,7 +17,7 @@ REQUESTS_YAML = """# requests.yaml
 """
 
 
-def test_print_passed_vs_failed(capsys: pytest.CaptureFixture[Any]) -> None:
+def test_echo_passed_vs_failed(capsys: pytest.CaptureFixture[Any]) -> None:
     request = Request(collection_id="foo")
     report: list[Report] = [
         Report(request=request),
