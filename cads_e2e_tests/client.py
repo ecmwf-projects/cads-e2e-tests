@@ -44,7 +44,11 @@ class TestClient(ApiClient):
         while collections is not None:
             collection_ids.extend(collections.collection_ids())
             collections = collections.next()
-        return collection_ids
+        return [
+            collection_id
+            for collection_id in collection_ids
+            if self.valid_values(collection_id, {})  # Must have constraints
+        ]
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         parameters = self.valid_values(collection_id, {})

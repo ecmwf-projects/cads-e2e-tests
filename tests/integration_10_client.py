@@ -135,3 +135,12 @@ def test_client_no_requests(key: str, url: str) -> None:
     (report,) = client.make_reports(requests=None, invalidate_cache=False)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
+
+
+def test_client_collection_ids(client: TestClient) -> None:
+    collection_ids = client.collecion_ids
+    assert not [
+        collection_id
+        for collection_id in collection_ids
+        if collection_id.endswith("complete") or collection_id.startswith("provider")
+    ]
