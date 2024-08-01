@@ -1,0 +1,24 @@
+- collection_id: cams-global-atmospheric-composition-forecasts
+  parameters:
+    variable:
+    - total_column_dimethyl_sulfide
+    - total_column_glyoxal
+    date: "2024-01-02"
+    time: 00:00
+    leadtime_hour: "0"
+    type: forecast
+    data_format: grib
+  checks:
+    extension: .grib
+- collection_id: cams-global-atmospheric-composition-forecasts
+  parameters:
+    variable:
+    - total_column_dimethyl_sulfide
+    - total_column_glyoxal
+    date: "2024-01-02"
+    time: 00:00
+    leadtime_hour: "0"
+    type: forecast
+    data_format: netcdf
+  checks:
+    extension: .nc

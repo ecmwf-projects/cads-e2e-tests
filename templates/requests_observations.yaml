@@ -1,0 +1,54 @@
+- collection_id: insitu-observations-woudc-ozone-total-column-and-profiles
+  parameters:
+    variable: air_temperature
+    observation_type: vertical_profile
+    year: "2014"
+    month: "01"
+    day: "01"
+    format: netCDF
+  checks:
+    extension: .nc
+- collection_id: insitu-observations-igra-baseline-network
+  parameters:
+    variable: air_temperature
+    archive: global_radiosonde_archive
+    year: "2014"
+    month: "01"
+    day: "01"
+    format: netCDF
+  checks:
+    extension: .nc
+- collection_id: insitu-observations-gnss
+  parameters:
+    variable:
+    - precipitable_water_column
+    - precipitable_water_column_total_uncertainty
+    network_type: igs_r3
+    year: "2014"
+    month: "01"
+    day: "01"
+    format: netCDF
+  checks:
+    extension: .nc
+- collection_id: insitu-observations-gruan-reference-network
+  parameters:
+    variable: air_temperature
+    year: "2014"
+    month: "01"
+    day: "01"
+    format: netCDF
+  checks:
+    extension: .nc
+- collection_id: insitu-observations-near-surface-temperature-us-climate-reference-network
+  parameters:
+    variable:
+    - maximum_air_temperature
+    - maximum_air_temperature_negative_total_uncertainty
+    - maximum_air_temperature_positive_total_uncertainty
+    time_aggregation: daily
+    year: "2014"
+    month: "01"
+    day: "01"
+    format: netCDF
+  checks:
+    extension: .nc

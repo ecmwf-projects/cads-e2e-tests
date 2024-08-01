@@ -1,0 +1,56 @@
+- collection_id: reanalysis-era5-single-levels
+  parameters:
+    variable: 2m_temperature
+    product_type: reanalysis
+    year: "2020"
+    month: "01"
+    day: "01"
+    time: 00:00
+    data_format: grib
+  checks:
+    extension: .grib
+- collection_id: reanalysis-era5-single-levels
+  parameters:
+    variable: 2m_temperature
+    product_type: reanalysis
+    year: "2020"
+    month: "01"
+    day: "01"
+    time: 00:00
+    data_format: netcdf
+  checks:
+    extension: .nc
+- collection_id: seasonal-original-single-levels
+  parameters:
+    originating_centre: ukmo
+    system: "12"
+    variable:
+    - 2m_dewpoint_temperature
+    year:
+    - "2015"
+    month:
+    - "02"
+    day:
+    - "09"
+    leadtime_hour:
+    - "390"
+    data_format: grib
+  checks:
+    extension: .grib
+- collection_id: seasonal-original-single-levels
+  parameters:
+    originating_centre: ukmo
+    system: "12"
+    variable:
+    - 2m_dewpoint_temperature
+    year:
+    - "2015"
+    month:
+    - "02"
+    day:
+    - "09"
+    leadtime_hour:
+    - "390"
+    data_format: netcdf
+  checks:
+    extension: .nc
