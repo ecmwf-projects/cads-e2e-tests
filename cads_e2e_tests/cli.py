@@ -52,7 +52,7 @@ def make_reports(
     else:
         requests = None
 
-    client = TestClient(url=url, key=key)
+    client = TestClient(url=url, key=key, maximum_tries=0)
     reports = client.make_reports(
         requests=requests,
         reports_path=reports_path,
