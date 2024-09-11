@@ -15,7 +15,6 @@ from . import models, utils
 from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
-RETRY_OPTIONS = {"maximum_tries": 0}
 
 
 def _licences_to_set_of_tuples(
@@ -91,7 +90,7 @@ class TestClient(ApiClient):
                 time.sleep(1)
 
             tic = time.perf_counter()
-            target = utils.Target(remote.download(retry_options=RETRY_OPTIONS))
+            target = utils.Target(remote.download())
         toc = time.perf_counter()
 
         if tracebacks:
