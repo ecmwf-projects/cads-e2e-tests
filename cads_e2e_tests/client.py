@@ -38,7 +38,7 @@ class TestClient(ApiClient):
         accepted_licences = _licences_to_set_of_tuples(self.accepted_licences)
         return licences - accepted_licences
 
-    def collecion_ids(self, collection_pattern_match: str = "") -> list[str]:
+    def collecion_ids(self, collection_pattern_match: str = "") -> tuple[list[str], list[str]]:
         collection_ids = []
         collections: Collections | None = self.collections()
         while collections is not None:
@@ -50,13 +50,14 @@ class TestClient(ApiClient):
             if re.search(collection_pattern_match, collection_id)
         ]
         out_collection_ids = []
+        unreachable_collection_ids = []
         for collection_id in collection_ids:
             try:
                 if self.valid_values(collection_id, {}):
                     out_collection_ids.append(collection_id)
             except HTTPError:
-                pass
-        return out_collection_ids
+                unreachable_collection_ids.append(collection_id)
+        return out_collection_ids, unreachable_collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         parameters = self.valid_values(collection_id, {})
@@ -138,13 +139,15 @@ class TestClient(ApiClient):
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
 
+        unreachable_collections: list[str] = []
         if requests is None:
             # One random request per dataset
+            collections_ids, unreachable_collections = self.collecion_ids(
+                collection_pattern_match=collection_pattern_match
+            )
             requests = [
                 Request(collection_id=collection_id)
-                for collection_id in self.collecion_ids(
-                    collection_pattern_match=collection_pattern_match
-                )
+                for collection_id in collections_ids
             ]
 
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
@@ -154,6 +157,13 @@ class TestClient(ApiClient):
             )
             for request in requests
         )
+        for unreachable in unreachable_collections:
+            reports.append(
+                Report(
+                    request=Request(collection_id=unreachable),
+                    tracebacks=["Unreachable collection"],
+                )
+            )
         if reports_path:
             with open(reports_path, "w") as fp:
                 models.dump_reports(reports, fp)
