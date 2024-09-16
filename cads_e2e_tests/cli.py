@@ -33,7 +33,7 @@ def make_reports(
         str, Option(help="Path to write the reports in JSON format")
     ] = "reports.json",
     collection_pattern_match: Annotated[
-        Optional[str],  # noqa: UP007
+        str,  # noqa: UP007
         Option(
             help=(
                 "A string pattern to match collections when exectuing random requests. "

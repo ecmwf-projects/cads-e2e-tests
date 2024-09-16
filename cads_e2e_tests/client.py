@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import random
+import re
 import time
 from pathlib import Path
 from typing import Any, Sequence
@@ -37,14 +38,16 @@ class TestClient(ApiClient):
         accepted_licences = _licences_to_set_of_tuples(self.accepted_licences)
         return licences - accepted_licences
 
-    def collecion_ids(self, collection_pattern_match: str = "") -> list[str] | None:
+    def collecion_ids(self, collection_pattern_match: str = "") -> list[str]:
         collection_ids = []
         collections: Collections | None = self.collections()
         while collections is not None:
             collection_ids.extend(collections.collection_ids())
             collections = collections.next()
         collection_ids = [
-            coll_id for coll_id in collection_ids if collection_pattern_match in coll_id
+            collection_id
+            for collection_id in collection_ids
+            if re.search(collection_pattern_match, collection_id)
         ]
         out_collection_ids = []
         for collection_id in collection_ids:

@@ -127,8 +127,7 @@ def test_client_random_request(client: TestClient) -> None:
 
 def test_client_no_requests(key: str, url: str) -> None:
     class MockClient(TestClient):
-        @property
-        def collecion_ids(self) -> list[str]:
+        def collecion_ids(self, collection_pattern_match: str = "") -> list[str]:
             return ["test-adaptor-url"]
 
     client = MockClient(key=key, url=url)
@@ -138,7 +137,7 @@ def test_client_no_requests(key: str, url: str) -> None:
 
 
 def test_client_collection_ids(client: TestClient) -> None:
-    collection_ids = client.collecion_ids
+    collection_ids = client.collecion_ids()
     assert not [
         collection_id
         for collection_id in collection_ids
