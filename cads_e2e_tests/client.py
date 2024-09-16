@@ -10,6 +10,7 @@ import attrs
 import joblib
 from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
+from requests import HTTPError
 
 from . import models, utils
 from .models import Report, Request
@@ -36,18 +37,23 @@ class TestClient(ApiClient):
         accepted_licences = _licences_to_set_of_tuples(self.accepted_licences)
         return licences - accepted_licences
 
-    @property
-    def collecion_ids(self) -> list[str]:
+    def collecion_ids(self, collection_pattern_match: str = "") -> list[str] | None:
         collection_ids = []
         collections: Collections | None = self.collections()
         while collections is not None:
             collection_ids.extend(collections.collection_ids())
             collections = collections.next()
-        return [
-            collection_id
-            for collection_id in collection_ids
-            if self.valid_values(collection_id, {})  # Must have constraints
+        collection_ids = [
+            coll_id for coll_id in collection_ids if collection_pattern_match in coll_id
         ]
+        out_collection_ids = []
+        for collection_id in collection_ids:
+            try:
+                if self.valid_values(collection_id, {}):
+                    out_collection_ids.append(collection_id)
+            except HTTPError:
+                pass
+        return out_collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         parameters = self.valid_values(collection_id, {})
@@ -124,6 +130,7 @@ class TestClient(ApiClient):
         invalidate_cache: bool = True,
         n_jobs: int = 1,
         verbose: int = 0,
+        collection_pattern_match: str = "",
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -132,7 +139,9 @@ class TestClient(ApiClient):
             # One random request per dataset
             requests = [
                 Request(collection_id=collection_id)
-                for collection_id in self.collecion_ids
+                for collection_id in self.collecion_ids(
+                    collection_pattern_match=collection_pattern_match
+                )
             ]
 
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)

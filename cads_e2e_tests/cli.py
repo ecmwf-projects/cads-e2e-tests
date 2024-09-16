@@ -32,6 +32,15 @@ def make_reports(
     reports_path: Annotated[
         str, Option(help="Path to write the reports in JSON format")
     ] = "reports.json",
+    collection_pattern_match: Annotated[
+        Optional[str],  # noqa: UP007
+        Option(
+            help=(
+                "A string pattern to match collections when exectuing random requests. "
+                "For example 'reanalysis' will run tests for collections with 'reanalysis' in the id"
+            ),
+        ),
+    ] = "",
     invalidate_cache: Annotated[
         bool,
         Option(help="Whether to invalidate the cache using the _timestamp parameter"),
@@ -59,5 +68,6 @@ def make_reports(
         invalidate_cache=invalidate_cache,
         n_jobs=n_jobs,
         verbose=verbose,
+        collection_pattern_match=collection_pattern_match,
     )
     echo_passed_vs_failed(reports)
