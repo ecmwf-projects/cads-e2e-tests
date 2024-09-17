@@ -9,6 +9,10 @@ from .models import Report
 
 
 def echo_passed_vs_failed(reports: list[Report]) -> None:
+    if not reports:
+        typer.secho("NUMBER OF REPORTS: 0", fg=typer.colors.YELLOW)
+        return
+
     failed = sum(True for request in reports if request.tracebacks)
     passed = len(reports) - failed
     failed_perc = failed * 100 / len(reports)
@@ -44,6 +48,10 @@ def make_reports(
         int,
         Option(help="The verbosity level"),
     ] = 10,
+    regex_pattern: Annotated[
+        str,
+        Option(help="Regex pattern used to filter collection IDs"),
+    ] = r"^(?!test-|provider-).*(?<!-complete)$",
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -59,5 +67,6 @@ def make_reports(
         invalidate_cache=invalidate_cache,
         n_jobs=n_jobs,
         verbose=verbose,
+        regex_pattern=regex_pattern,
     )
     echo_passed_vs_failed(reports)

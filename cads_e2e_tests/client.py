@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import random
+import re
 import time
 from pathlib import Path
 from typing import Any, Sequence
@@ -43,11 +44,7 @@ class TestClient(ApiClient):
         while collections is not None:
             collection_ids.extend(collections.collection_ids())
             collections = collections.next()
-        return [
-            collection_id
-            for collection_id in collection_ids
-            if self.valid_values(collection_id, {})  # Must have constraints
-        ]
+        return collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         parameters = self.valid_values(collection_id, {})
@@ -74,11 +71,10 @@ class TestClient(ApiClient):
         )
 
     def _make_report(self, request: Request, invalidate_cache: bool) -> Report:
-        request = self.update_request_parameters(request, invalidate_cache)
-        report = Report(request=request)
-
         tracebacks: list[str] = []
         with utils.catch_exceptions(tracebacks, logger=LOGGER):
+            request = self.update_request_parameters(request, invalidate_cache)
+            report = Report(request=request)
             remote = self.collection(request.collection_id).submit(**request.parameters)
             request_uid = remote.request_uid
             LOGGER.debug(f"{request_uid=}")
@@ -124,16 +120,22 @@ class TestClient(ApiClient):
         invalidate_cache: bool = True,
         n_jobs: int = 1,
         verbose: int = 0,
+        regex_pattern: str = "",
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
 
         if requests is None:
-            # One random request per dataset
             requests = [
                 Request(collection_id=collection_id)
                 for collection_id in self.collecion_ids
             ]
+
+        requests = [
+            request
+            for request in requests
+            if re.search(regex_pattern, request.collection_id)
+        ]
 
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
         reports: list[Report] = parallel(

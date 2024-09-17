@@ -31,6 +31,7 @@ def test_cli_make_report_from_yaml(
         requests_path=str(requests_path),
         reports_path=str(report_path),
         invalidate_cache=False,
+        regex_pattern="",
     )
 
     captured = capsys.readouterr()
