@@ -137,10 +137,16 @@ def test_client_no_requests(key: str, url: str) -> None:
     assert not report.tracebacks
 
 
-def test_client_collection_ids(client: TestClient) -> None:
-    collection_ids = client.collecion_ids
-    assert not [
-        collection_id
-        for collection_id in collection_ids
-        if collection_id.endswith("complete") or collection_id.startswith("provider")
-    ]
+def test_client_regex_pattern(client: TestClient, dummy_request: Request) -> None:
+    requests = [dummy_request, Request(collection_id="foo")]
+    (report,) = client.make_reports(
+        requests=requests, invalidate_cache=False, regex_pattern="test-*"
+    )
+    assert report.request.collection_id == "test-adaptor-dummy"
+
+
+def test_client_unreachable_collection(client: TestClient) -> None:
+    request = Request(collection_id="foo")
+    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
+    (traceback,) = report.tracebacks
+    assert "404 Client Error" in traceback

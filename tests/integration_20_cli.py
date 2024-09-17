@@ -31,10 +31,11 @@ def test_cli_make_report_from_yaml(
         requests_path=str(requests_path),
         reports_path=str(report_path),
         invalidate_cache=False,
+        regex_pattern="",
     )
 
     captured = capsys.readouterr()
-    assert captured.out == "PASSED: 1 (100.0%)\n"
+    assert captured.out == "NUMBER OF REPORTS: 1\nPASSED: 1 (100.0%)\n"
 
     (actual_report,) = models.load_reports(report_path.open())
     expected_report = Report(
