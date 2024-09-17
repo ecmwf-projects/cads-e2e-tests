@@ -138,8 +138,15 @@ def test_client_no_requests(key: str, url: str) -> None:
 
 
 def test_client_regex_pattern(client: TestClient, dummy_request: Request) -> None:
-    requests = [Request(collection_id="test-adaptor-url"), Request(collection_id="foo")]
+    requests = [dummy_request, Request(collection_id="foo")]
     (report,) = client.make_reports(
         requests=requests, invalidate_cache=False, regex_pattern="test-*"
     )
-    assert report.request.collection_id == "test-adaptor-url"
+    assert report.request.collection_id == "test-adaptor-dummy"
+
+
+def test_unreachable_collection(client: TestClient) -> None:
+    request = Request(collection_id="foo")
+    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
+    (traceback,) = report.tracebacks
+    assert "404 Client Error" in traceback

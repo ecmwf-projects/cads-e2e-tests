@@ -71,10 +71,16 @@ class TestClient(ApiClient):
         )
 
     def _make_report(self, request: Request, invalidate_cache: bool) -> Report:
+        report = Report(request=request)
+
         tracebacks: list[str] = []
         with utils.catch_exceptions(tracebacks, logger=LOGGER):
             request = self.update_request_parameters(request, invalidate_cache)
-            report = Report(request=request)
+            report = Report(
+                request=request,
+                **report.model_dump(exclude={"request"}),
+            )
+
             remote = self.collection(request.collection_id).submit(**request.parameters)
             request_uid = remote.request_uid
             LOGGER.debug(f"{request_uid=}")
