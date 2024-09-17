@@ -9,18 +9,20 @@ from .models import Report
 
 
 def echo_passed_vs_failed(reports: list[Report]) -> None:
-    if not reports:
-        typer.secho("NUMBER OF REPORTS: 0", fg=typer.colors.YELLOW)
-        return
-
-    failed = sum(True for request in reports if request.tracebacks)
-    passed = len(reports) - failed
-    failed_perc = failed * 100 / len(reports)
-    passed_perc = passed * 100 / len(reports)
-    if failed:
-        typer.secho(f"FAILED: {failed} ({failed_perc:.1f}%)", fg=typer.colors.RED)
-    if passed:
-        typer.secho(f"PASSED: {passed} ({passed_perc:.1f}%)", fg=typer.colors.GREEN)
+    n_reports = len(reports)
+    typer.secho(
+        f"NUMBER OF REPORTS: {len(reports)}",
+        fg=typer.colors.YELLOW if not n_reports else None,
+    )
+    if n_reports:
+        failed = sum(True for request in reports if request.tracebacks)
+        passed = len(reports) - failed
+        failed_perc = failed * 100 / n_reports
+        passed_perc = passed * 100 / n_reports
+        if failed:
+            typer.secho(f"FAILED: {failed} ({failed_perc:.1f}%)", fg=typer.colors.RED)
+        if passed:
+            typer.secho(f"PASSED: {passed} ({passed_perc:.1f}%)", fg=typer.colors.GREEN)
 
 
 def make_reports(

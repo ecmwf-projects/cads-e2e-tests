@@ -26,4 +26,6 @@ def test_echo_passed_vs_failed(capsys: pytest.CaptureFixture[Any]) -> None:
     ]
     cli.echo_passed_vs_failed(report)
     captured = capsys.readouterr()
-    assert captured.out == "FAILED: 1 (33.3%)\nPASSED: 2 (66.7%)\n"
+    assert (
+        captured.out == "NUMBER OF REPORTS: 3\nFAILED: 1 (33.3%)\nPASSED: 2 (66.7%)\n"
+    )
