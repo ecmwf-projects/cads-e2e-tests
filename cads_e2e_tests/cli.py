@@ -11,7 +11,7 @@ from .models import Report
 def echo_passed_vs_failed(reports: list[Report]) -> None:
     n_reports = len(reports)
     typer.secho(
-        f"NUMBER OF REPORTS: {len(reports)}",
+        f"NUMBER OF REPORTS: {n_reports}",
         fg=typer.colors.YELLOW if not n_reports else None,
     )
     if n_reports:
