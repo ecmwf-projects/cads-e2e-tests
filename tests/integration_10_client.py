@@ -145,7 +145,7 @@ def test_client_regex_pattern(client: TestClient, dummy_request: Request) -> Non
     assert report.request.collection_id == "test-adaptor-dummy"
 
 
-def test_unreachable_collection(client: TestClient) -> None:
+def test_client_unreachable_collection(client: TestClient) -> None:
     request = Request(collection_id="foo")
     (report,) = client.make_reports(requests=[request], invalidate_cache=False)
     (traceback,) = report.tracebacks
