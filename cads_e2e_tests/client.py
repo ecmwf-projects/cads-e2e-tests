@@ -19,9 +19,9 @@ LOGGER = logging.getLogger(__name__)
 
 
 def _licences_to_set_of_tuples(
-    licences: dict[str, Any],
+    licences: list[dict[str, Any]],
 ) -> set[tuple[str, int]]:
-    return {(licence["id"], licence["revision"]) for licence in licences["licences"]}
+    return {(licence["id"], licence["revision"]) for licence in licences}
 
 
 @attrs.define
@@ -33,23 +33,23 @@ class TestClient(ApiClient):
 
     @property
     def missing_licences(self) -> set[tuple[str, int]]:
-        licences = _licences_to_set_of_tuples(self.licences)
-        accepted_licences = _licences_to_set_of_tuples(self.accepted_licences)
+        licences = _licences_to_set_of_tuples(self.get_licences())
+        accepted_licences = _licences_to_set_of_tuples(self.get_accepted_licences())
         return licences - accepted_licences
 
     @property
     def collecion_ids(self) -> list[str]:
         collection_ids = []
-        collections: Collections | None = self.collections()
+        collections: Collections | None = self.get_collections()
         while collections is not None:
-            collection_ids.extend(collections.collection_ids())
-            collections = collections.next()
+            collection_ids.extend(collections.collection_ids)
+            collections = collections.next
         return collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
-        parameters = self.valid_values(collection_id, {})
+        parameters = self.apply_constraints(collection_id)
         for key in list(parameters):
-            if choices := self.valid_values(collection_id, parameters)[key]:
+            if choices := self.apply_constraints(collection_id, **parameters)[key]:
                 parameters[key] = random.choice(choices)
             else:
                 parameters.pop(key)
@@ -81,7 +81,7 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"request"}),
             )
 
-            remote = self.collection(request.collection_id).submit(**request.parameters)
+            remote = self.submit(request.collection_id, **request.parameters)
             request_uid = remote.request_uid
             LOGGER.debug(f"{request_uid=}")
             report = Report(
