@@ -128,7 +128,7 @@ def test_client_random_request(client: TestClient) -> None:
 def test_client_no_requests(key: str, url: str) -> None:
     class MockClient(TestClient):
         @property
-        def collecion_ids(self) -> list[str]:
+        def collection_ids(self) -> list[str]:
             return ["test-adaptor-url"]
 
     client = MockClient(key=key, url=url)

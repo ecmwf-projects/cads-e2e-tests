@@ -1,4 +1,5 @@
 import datetime
+import functools
 import logging
 import os
 import random
@@ -26,19 +27,14 @@ def _licences_to_set_of_tuples(
 
 @attrs.define
 class TestClient(ApiClient):
-    def __attrs_post_init__(self) -> None:
-        # TODO: Remove when anonymous user is implemented
-        for licence in self.missing_licences:
-            self.accept_licence(*licence)
-
-    @property
+    @functools.cached_property
     def missing_licences(self) -> set[tuple[str, int]]:
         licences = _licences_to_set_of_tuples(self.get_licences())
         accepted_licences = _licences_to_set_of_tuples(self.get_accepted_licences())
         return licences - accepted_licences
 
     @property
-    def collecion_ids(self) -> list[str]:
+    def collection_ids(self) -> list[str]:
         collection_ids = []
         collections: Collections | None = self.get_collections()
         while collections is not None:
@@ -131,10 +127,13 @@ class TestClient(ApiClient):
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
 
+        for licence in self.missing_licences:
+            self.accept_licence(*licence)
+
         if requests is None:
             requests = [
                 Request(collection_id=collection_id)
-                for collection_id in self.collecion_ids
+                for collection_id in self.collection_ids
             ]
 
         requests = [
