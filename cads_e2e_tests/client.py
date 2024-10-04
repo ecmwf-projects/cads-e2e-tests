@@ -66,7 +66,7 @@ class TestClient(ApiClient):
             **request.model_dump(exclude={"parameters"}),
         )
 
-    def _make_report(self, request: Request, invalidate_cache: bool) -> Report:
+    def _make_report(self, request: Request, invalidate_cache: bool, dont_download: bool) -> Report:
         report = Report(request=request)
 
         tracebacks: list[str] = []
@@ -88,7 +88,11 @@ class TestClient(ApiClient):
                 time.sleep(1)
 
             tic = time.perf_counter()
-            target = utils.Target(remote.download())
+
+            if dont_download:
+                target = utils.RemoteTarget(remote.make_results().asset)
+            else:
+                target = utils.Target(remote.download())
         toc = time.perf_counter()
 
         if tracebacks:
@@ -111,9 +115,12 @@ class TestClient(ApiClient):
         )
 
     @joblib.delayed  # type: ignore[misc]
-    def _delayed_make_report(self, request: Request, invalidate_cache: bool) -> Report:
+    def _delayed_make_report(self, request: Request, invalidate_cache: bool, dont_download: bool) -> Report:
         with utils.tmp_working_dir():
-            return self._make_report(request=request, invalidate_cache=invalidate_cache)
+            return self._make_report(
+                request=request, invalidate_cache=invalidate_cache,
+                dont_download=dont_download,
+            )
 
     def make_reports(
         self,
@@ -123,6 +130,7 @@ class TestClient(ApiClient):
         n_jobs: int = 1,
         verbose: int = 0,
         regex_pattern: str = "",
+        dont_download: bool = False
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -145,7 +153,8 @@ class TestClient(ApiClient):
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
         reports: list[Report] = parallel(
             self._delayed_make_report(
-                request=request, invalidate_cache=invalidate_cache
+                request=request, invalidate_cache=invalidate_cache,
+                dont_download=dont_download
             )
             for request in requests
         )

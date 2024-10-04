@@ -51,3 +51,25 @@ class Target:
     @property
     def size(self) -> int:
         return os.path.getsize(self.target)
+
+@dataclasses.dataclass
+class RemoteTarget:
+    asset: dict[str, str]
+
+    @property
+    def checksum(self) -> str:
+        return self.asset["file:checksum"]
+
+    @property
+    def extension(self) -> str:
+        _, extension = os.path.splitext(self.asset["href"])
+        return extension
+
+    @property
+    def result_type(self) -> str:
+        _, extension = os.path.splitext(self.asset["type"])
+        return extension
+
+    @property
+    def size(self) -> int:
+        return self.asset["file:size"]
