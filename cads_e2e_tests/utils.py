@@ -52,13 +52,14 @@ class Target:
     def size(self) -> int:
         return os.path.getsize(self.target)
 
+
 @dataclasses.dataclass
 class RemoteTarget:
     asset: dict[str, str]
 
     @property
     def checksum(self) -> str:
-        return self.asset["file:checksum"]
+        return "Not implemented for remote results"
 
     @property
     def extension(self) -> str:
@@ -72,4 +73,4 @@ class RemoteTarget:
 
     @property
     def size(self) -> int:
-        return self.asset["file:size"]
+        return int(self.asset["file:size"])

@@ -74,6 +74,6 @@ def make_reports(
         n_jobs=n_jobs,
         verbose=verbose,
         regex_pattern=regex_pattern,
-        dont_download=dont_download
+        dont_download=dont_download,
     )
     echo_passed_vs_failed(reports)
