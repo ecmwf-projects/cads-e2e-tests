@@ -11,18 +11,29 @@ def report() -> Report:
     return Report(
         request=Request(
             collection_id="foo",
-            checks=Checks(checksum="foo", extension=".foo", size=0, time=0.1),
+            checks=Checks(
+                checksum="foo",
+                extension=".foo",
+                size=0,
+                time=0.1,
+                content_length=10,
+                content_type="foo-type",
+            ),
         ),
         checksum="bar",
         extension=".bar",
         size=1,
         time=1,
+        content_length=20,
+        content_type="bar-type",
     )
 
 
 def test_report_run_checks(report: Report) -> None:
     expected_tracebacks = [
         "cads_e2e_tests.exceptions.ChecksumError: actual='bar' expected='foo'",
+        "cads_e2e_tests.exceptions.ContentLengthError: actual=20 expected=10",
+        "cads_e2e_tests.exceptions.ContentTypeError: actual='bar-type' expected='foo-type'",
         "cads_e2e_tests.exceptions.ExtensionError: actual='.bar' expected='.foo'",
         "cads_e2e_tests.exceptions.SizeError: actual=1 expected=0",
         "cads_e2e_tests.exceptions.TimeError: actual=1.0 expected=0.1",

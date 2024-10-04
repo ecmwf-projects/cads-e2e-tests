@@ -1,11 +1,14 @@
 import contextlib
 import dataclasses
+import functools
 import hashlib
 import logging
 import os
 import tempfile
 import traceback
 from typing import Iterator, Type
+
+from cads_api_client import Results
 
 
 @contextlib.contextmanager
@@ -35,7 +38,11 @@ def catch_exceptions(
 
 @dataclasses.dataclass
 class Target:
-    target: str
+    results: Results
+
+    @functools.cached_property
+    def target(self) -> str:
+        return self.results.download()
 
     @property
     def checksum(self) -> str:
@@ -51,3 +58,11 @@ class Target:
     @property
     def size(self) -> int:
         return os.path.getsize(self.target)
+
+    @property
+    def content_length(self) -> int:
+        return self.results.content_length
+
+    @property
+    def content_type(self) -> str:
+        return self.results.content_type

@@ -84,11 +84,10 @@ class TestClient(ApiClient):
                 request_uid=request_uid,
                 **report.model_dump(exclude={"request_uid"}),
             )
-            while remote.status == "accepted":
-                time.sleep(1)
+            results = remote.make_results()
 
             tic = time.perf_counter()
-            target = utils.Target(remote.download())
+            target = utils.Target(results)
         toc = time.perf_counter()
 
         if tracebacks:
@@ -102,7 +101,18 @@ class TestClient(ApiClient):
             extension=target.extension,
             size=target.size,
             checksum=target.checksum,
-            **report.model_dump(exclude={"time", "extension", "size", "checksum"}),
+            content_length=target.content_length,
+            content_type=target.content_type,
+            **report.model_dump(
+                exclude={
+                    "time",
+                    "extension",
+                    "size",
+                    "checksum",
+                    "content_length",
+                    "content_type",
+                }
+            ),
         )
         tracebacks = report.run_checks()
         return Report(

@@ -15,6 +15,8 @@ REQUESTS_YAML = """# requests.yaml
     size: 0
     time: 60
     checksum: d41d8cd98f00b204e9800998ecf8427e
+    content_length: 0
+    content_type: application/x-grib
 """
 
 
@@ -47,6 +49,8 @@ def test_cli_make_report_from_yaml(
                 size=0,
                 time=60,
                 checksum="d41d8cd98f00b204e9800998ecf8427e",
+                content_length=0,
+                content_type="application/x-grib",
             ),
         ),
         request_uid=actual_report.request_uid,
@@ -54,6 +58,8 @@ def test_cli_make_report_from_yaml(
         size=0,
         checksum="d41d8cd98f00b204e9800998ecf8427e",
         time=actual_report.time,
+        content_length=0,
+        content_type="application/x-grib",
     )
 
     assert actual_report == expected_report

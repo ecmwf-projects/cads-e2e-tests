@@ -38,6 +38,8 @@ def test_client_make_reports(client: TestClient, dummy_request: Request) -> None
         size=0,
         checksum="d41d8cd98f00b204e9800998ecf8427e",
         time=time,
+        content_length=0,
+        content_type="application/x-grib",
     )
     assert actual_report == expected_report
 
@@ -85,6 +87,14 @@ def test_client_write_reports(
                 r"cads_e2e_tests.exceptions.ChecksumError: "
                 r"actual='d41d8cd98f00b204e9800998ecf8427e' expected='foo'"
             ),
+        ),
+        (
+            Checks(content_length=1),
+            r"cads_e2e_tests.exceptions.ContentLengthError: actual=0 expected=1",
+        ),
+        (
+            Checks(content_type="foo"),
+            r"cads_e2e_tests.exceptions.ContentTypeError: actual='application/x-grib' expected='foo'",
         ),
         (
             Checks(extension=".foo"),
