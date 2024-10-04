@@ -84,7 +84,7 @@ def load_reports(fp: TextIO | BinaryIO) -> list[Report]:
 
 
 def dump_reports(reports: list[Report], fp: TextIO | BinaryIO) -> None:
-    json.dump(pydantic_core.to_jsonable_python(reports), fp)
+    json.dump(pydantic_core.to_jsonable_python(reports), fp, indent=2)
 
 
 def load_requests(fp: TextIO | BinaryIO) -> list[Request]:
