@@ -5,17 +5,6 @@ import pytest
 from cads_e2e_tests import cli
 from cads_e2e_tests.models import Report, Request
 
-REQUESTS_YAML = """# requests.yaml
-- collection_id: test-adaptor-dummy
-  parameters:
-    size: 0
-  checks:
-    extension: .grib
-    size: 0
-    time: 60
-    checksum: d41d8cd98f00b204e9800998ecf8427e
-"""
-
 
 def test_echo_passed_vs_failed(capsys: pytest.CaptureFixture[Any]) -> None:
     request = Request(collection_id="foo")

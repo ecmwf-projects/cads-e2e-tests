@@ -35,6 +35,9 @@ cads-e2e-tests --reports-path random_reports.json
     extension: .grib  # file extension
     size: 2076588  # file size in Bytes
     time: 60  # max elapsed time in seconds
+    # checks that do not require download step
+    content_length: 2076588  # file size in Bytes inferred from metadata
+    content_type: application/x-grib  # file type inferred from metadata
 
 # Example 2:
 - collection_id: test-adaptor-dummy
