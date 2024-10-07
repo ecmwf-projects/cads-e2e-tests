@@ -31,8 +31,7 @@ def _switch_off_download_checks(request: Request) -> Request:
         **checks_dict,
         **request.checks.model_dump(exclude=DOWNLOAD_CHECKS),
     )
-    request = Request(checks=checks, **request.model_dump(exclude={"checks"}))
-    return request
+    return Request(checks=checks, **request.model_dump(exclude={"checks"}))
 
 
 @attrs.define
