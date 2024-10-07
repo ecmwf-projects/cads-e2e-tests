@@ -34,8 +34,8 @@ cads-e2e-tests --reports-path random_reports.json
     checksum: 01683b3d69dec4c7221e524e3f6697dd  # file md5 hash
     extension: .grib  # file extension
     size: 2076588  # file size in Bytes
-    time: 60  # max elapsed time in seconds
-    # checks that do not require download step
+    # checks that do not require downloading the results
+    time: 60  # maximum running time to generate results in seconds
     content_length: 2076588  # file size in Bytes inferred from metadata
     content_type: application/x-grib  # file type inferred from metadata
 

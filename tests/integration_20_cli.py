@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from pytest import CaptureFixture
 
 from cads_e2e_tests import models
@@ -20,8 +21,19 @@ REQUESTS_YAML = """# requests.yaml
 """
 
 
+@pytest.mark.parametrize(
+    "download,extension,size,checksum",
+    [(True, ".grib", 0, "d41d8cd98f00b204e9800998ecf8427e"), (False, None, None, None)],
+)
 def test_cli_make_report_from_yaml(
-    capsys: CaptureFixture[str], key: str, url: str, tmp_path: Path
+    capsys: CaptureFixture[str],
+    key: str,
+    url: str,
+    tmp_path: Path,
+    download: bool,
+    extension: str | None,
+    size: int | None,
+    checksum: str | None,
 ) -> None:
     requests_path = tmp_path / "requests.yaml"
     requests_path.write_text(REQUESTS_YAML)
@@ -34,6 +46,7 @@ def test_cli_make_report_from_yaml(
         reports_path=str(report_path),
         invalidate_cache=False,
         regex_pattern="",
+        download=download,
     )
 
     captured = capsys.readouterr()
@@ -45,18 +58,18 @@ def test_cli_make_report_from_yaml(
             collection_id="test-adaptor-dummy",
             parameters={"size": 0},
             checks=Checks(
-                extension=".grib",
-                size=0,
+                extension=extension,
+                size=size,
                 time=60,
-                checksum="d41d8cd98f00b204e9800998ecf8427e",
+                checksum=checksum,
                 content_length=0,
                 content_type="application/x-grib",
             ),
         ),
         request_uid=actual_report.request_uid,
-        extension=".grib",
-        size=0,
-        checksum="d41d8cd98f00b204e9800998ecf8427e",
+        extension=extension,
+        size=size,
+        checksum=checksum,
         time=actual_report.time,
         content_length=0,
         content_type="application/x-grib",

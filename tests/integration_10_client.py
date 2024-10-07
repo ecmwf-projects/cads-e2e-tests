@@ -44,6 +44,36 @@ def test_client_make_reports(client: TestClient, dummy_request: Request) -> None
     assert actual_report == expected_report
 
 
+def test_client_make_reports_no_download(
+    client: TestClient, dummy_request: Request
+) -> None:
+    (actual_report,) = client.make_reports(
+        requests=[dummy_request], invalidate_cache=False, download=False
+    )
+
+    request_uid = actual_report.request_uid
+    assert uuid.UUID(request_uid)
+
+    time = actual_report.time
+    assert isinstance(time, float)
+    assert time > 0
+
+    expected_report = Report(
+        request=Request(
+            collection_id="test-adaptor-dummy",
+            parameters={"size": 0},
+        ),
+        request_uid=request_uid,
+        extension=None,
+        size=None,
+        checksum=None,
+        time=time,
+        content_length=0,
+        content_type="application/x-grib",
+    )
+    assert actual_report == expected_report
+
+
 @pytest.mark.parametrize(
     "invalidate_cache,expected_parameters",
     [

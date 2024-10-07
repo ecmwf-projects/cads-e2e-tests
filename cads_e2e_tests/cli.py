@@ -54,6 +54,10 @@ def make_reports(
         str,
         Option(help="Regex pattern used to filter collection IDs"),
     ] = r"^(?!test-|provider-).*(?<!-complete)$",
+    download: Annotated[
+        bool,
+        Option(help="Whether to download the results"),
+    ] = True,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -70,5 +74,6 @@ def make_reports(
         n_jobs=n_jobs,
         verbose=verbose,
         regex_pattern=regex_pattern,
+        download=download,
     )
     echo_passed_vs_failed(reports)
