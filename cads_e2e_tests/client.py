@@ -106,11 +106,11 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"time", "content_length", "content_type"}),
             )
             if download:
-                results_info = utils.TargetInfo(results.download())
+                target_info = utils.TargetInfo(results.download())
                 report = Report(
-                    extension=results_info.extension,
-                    size=results_info.size,
-                    checksum=results_info.checksum,
+                    extension=target_info.extension,
+                    size=target_info.size,
+                    checksum=target_info.checksum,
                     **report.model_dump(exclude={"extension", "size", "checksum"}),
                 )
 
