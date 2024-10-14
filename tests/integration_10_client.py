@@ -38,6 +38,38 @@ def test_client_make_reports(client: TestClient, dummy_request: Request) -> None
         size=0,
         checksum="d41d8cd98f00b204e9800998ecf8427e",
         time=time,
+        content_length=0,
+        content_type="application/x-grib",
+    )
+    assert actual_report == expected_report
+
+
+def test_client_make_reports_no_download(
+    client: TestClient, dummy_request: Request
+) -> None:
+    (actual_report,) = client.make_reports(
+        requests=[dummy_request], invalidate_cache=False, download=False
+    )
+
+    request_uid = actual_report.request_uid
+    assert uuid.UUID(request_uid)
+
+    time = actual_report.time
+    assert isinstance(time, float)
+    assert time > 0
+
+    expected_report = Report(
+        request=Request(
+            collection_id="test-adaptor-dummy",
+            parameters={"size": 0},
+        ),
+        request_uid=request_uid,
+        extension=None,
+        size=None,
+        checksum=None,
+        time=time,
+        content_length=0,
+        content_type="application/x-grib",
     )
     assert actual_report == expected_report
 
@@ -85,6 +117,14 @@ def test_client_write_reports(
                 r"cads_e2e_tests.exceptions.ChecksumError: "
                 r"actual='d41d8cd98f00b204e9800998ecf8427e' expected='foo'"
             ),
+        ),
+        (
+            Checks(content_length=1),
+            r"cads_e2e_tests.exceptions.ContentLengthError: actual=0 expected=1",
+        ),
+        (
+            Checks(content_type="foo"),
+            r"cads_e2e_tests.exceptions.ContentTypeError: actual='application/x-grib' expected='foo'",
         ),
         (
             Checks(extension=".foo"),

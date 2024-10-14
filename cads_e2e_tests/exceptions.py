@@ -29,3 +29,11 @@ class TimeError(CheckError):
 
 class ChecksumError(CheckError):
     pass
+
+
+class ContentLengthError(CheckError):
+    pass
+
+
+class ContentTypeError(CheckError):
+    pass

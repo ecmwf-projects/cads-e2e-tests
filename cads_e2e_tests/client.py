@@ -4,7 +4,6 @@ import logging
 import os
 import random
 import re
-import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -14,15 +13,25 @@ from cads_api_client import ApiClient
 from cads_api_client.catalogue import Collections
 
 from . import models, utils
-from .models import Report, Request
+from .models import Checks, Report, Request
 
 LOGGER = logging.getLogger(__name__)
+DOWNLOAD_CHECKS = {"checksum", "extension", "size"}
 
 
 def _licences_to_set_of_tuples(
     licences: list[dict[str, Any]],
 ) -> set[tuple[str, int]]:
     return {(licence["id"], licence["revision"]) for licence in licences}
+
+
+def _switch_off_download_checks(request: Request) -> Request:
+    checks_dict = dict.fromkeys(DOWNLOAD_CHECKS, None)
+    checks = Checks(
+        **checks_dict,
+        **request.checks.model_dump(exclude=DOWNLOAD_CHECKS),
+    )
+    return Request(checks=checks, **request.model_dump(exclude={"checks"}))
 
 
 @attrs.define
@@ -66,7 +75,9 @@ class TestClient(ApiClient):
             **request.model_dump(exclude={"parameters"}),
         )
 
-    def _make_report(self, request: Request, invalidate_cache: bool) -> Report:
+    def _make_report(
+        self, request: Request, invalidate_cache: bool, download: bool
+    ) -> Report:
         report = Report(request=request)
 
         tracebacks: list[str] = []
@@ -78,18 +89,30 @@ class TestClient(ApiClient):
             )
 
             remote = self.submit(request.collection_id, **request.parameters)
-            request_uid = remote.request_uid
-            LOGGER.debug(f"{request_uid=}")
             report = Report(
-                request_uid=request_uid,
+                request_uid=remote.request_uid,
                 **report.model_dump(exclude={"request_uid"}),
             )
-            while remote.status == "accepted":
-                time.sleep(1)
 
-            tic = time.perf_counter()
-            target = utils.Target(remote.download())
-        toc = time.perf_counter()
+            results = remote.make_results()
+            tic = datetime.datetime.fromisoformat(remote.json["started"])
+            toc = datetime.datetime.fromisoformat(remote.json["finished"])
+            elapsed_time = (toc - tic).total_seconds()
+
+            report = Report(
+                time=elapsed_time,
+                content_length=results.content_length,
+                content_type=results.content_type,
+                **report.model_dump(exclude={"time", "content_length", "content_type"}),
+            )
+            if download:
+                target_info = utils.TargetInfo(results.download())
+                report = Report(
+                    extension=target_info.extension,
+                    size=target_info.size,
+                    checksum=target_info.checksum,
+                    **report.model_dump(exclude={"extension", "size", "checksum"}),
+                )
 
         if tracebacks:
             return Report(
@@ -97,13 +120,6 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"tracebacks"}),
             )
 
-        report = Report(
-            time=toc - tic,
-            extension=target.extension,
-            size=target.size,
-            checksum=target.checksum,
-            **report.model_dump(exclude={"time", "extension", "size", "checksum"}),
-        )
         tracebacks = report.run_checks()
         return Report(
             tracebacks=tracebacks,
@@ -111,9 +127,13 @@ class TestClient(ApiClient):
         )
 
     @joblib.delayed  # type: ignore[misc]
-    def _delayed_make_report(self, request: Request, invalidate_cache: bool) -> Report:
+    def _delayed_make_report(
+        self, request: Request, invalidate_cache: bool, download: bool
+    ) -> Report:
         with utils.tmp_working_dir():
-            return self._make_report(request=request, invalidate_cache=invalidate_cache)
+            return self._make_report(
+                request=request, invalidate_cache=invalidate_cache, download=download
+            )
 
     def make_reports(
         self,
@@ -123,6 +143,7 @@ class TestClient(ApiClient):
         n_jobs: int = 1,
         verbose: int = 0,
         regex_pattern: str = "",
+        download: bool = True,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -142,10 +163,15 @@ class TestClient(ApiClient):
             if re.search(regex_pattern, request.collection_id)
         ]
 
+        if not download:
+            requests = [_switch_off_download_checks(request) for request in requests]
+
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
         reports: list[Report] = parallel(
             self._delayed_make_report(
-                request=request, invalidate_cache=invalidate_cache
+                request=request,
+                invalidate_cache=invalidate_cache,
+                download=download,
             )
             for request in requests
         )

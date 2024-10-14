@@ -16,6 +16,8 @@ class Checks(BaseModel):
     extension: str | None = None
     size: int | None = None
     time: float | None = None
+    content_length: int | None = None
+    content_type: str | None = None
 
     def check_checksum(self, actual: str) -> None:
         expected = self.checksum
@@ -37,6 +39,16 @@ class Checks(BaseModel):
         if expected is not None and actual > expected:
             raise exceptions.TimeError(actual=actual, expected=expected)
 
+    def check_content_length(self, actual: int) -> None:
+        expected = self.content_length
+        if expected is not None and actual != expected:
+            raise exceptions.ContentLengthError(actual=actual, expected=expected)
+
+    def check_content_type(self, actual: str) -> None:
+        expected = self.content_type
+        if expected is not None and actual != expected:
+            raise exceptions.ContentTypeError(actual=actual, expected=expected)
+
 
 class Request(BaseModel):
     collection_id: str
@@ -49,6 +61,8 @@ class Report(BaseModel):
     tracebacks: list[str] = []
     request_uid: str | None = None
     checksum: str | None = None
+    content_length: int | None = None
+    content_type: str | None = None
     extension: str | None = None
     size: int | None = None
     time: float | None = None
@@ -64,6 +78,13 @@ class Report(BaseModel):
             with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_checksum(self.checksum)
 
+        if self.content_length is not None:
+            with self.catch_exceptions(tracebacks=tracebacks):
+                self.request.checks.check_content_length(self.content_length)
+
+        if self.content_type is not None:
+            with self.catch_exceptions(tracebacks=tracebacks):
+                self.request.checks.check_content_type(self.content_type)
         if self.extension is not None:
             with self.catch_exceptions(tracebacks=tracebacks):
                 self.request.checks.check_extension(self.extension)

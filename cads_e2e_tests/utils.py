@@ -34,7 +34,7 @@ def catch_exceptions(
 
 
 @dataclasses.dataclass
-class Target:
+class TargetInfo:
     target: str
 
     @property

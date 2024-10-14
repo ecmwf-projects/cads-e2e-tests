@@ -34,8 +34,8 @@ def test_utils_catch_exceptions() -> None:
 def test_utils_target(tmp_path: Path) -> None:
     tmp_file = tmp_path / "test.txt"
     tmp_file.write_text("foo")
-    target = utils.Target(str(tmp_file))
+    target_info = utils.TargetInfo(str(tmp_file))
 
-    assert target.checksum == "acbd18db4cc2f85cedef654fccc4a4d8"
-    assert target.size == 3
-    assert target.extension == ".txt"
+    assert target_info.checksum == "acbd18db4cc2f85cedef654fccc4a4d8"
+    assert target_info.size == 3
+    assert target_info.extension == ".txt"
