@@ -4,6 +4,7 @@ import logging
 import os
 import random
 import re
+import time
 from pathlib import Path
 from typing import Any, Sequence
 
@@ -95,6 +96,7 @@ class TestClient(ApiClient):
             )
 
             results = remote.make_results()
+            time.sleep(1)  # Make sure start/end datetimes are updated
             assert remote.start_datetime is not None and remote.end_datetime is not None
             elapsed_time = (remote.end_datetime - remote.start_datetime).total_seconds()
 
