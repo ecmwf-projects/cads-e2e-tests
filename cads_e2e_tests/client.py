@@ -95,9 +95,8 @@ class TestClient(ApiClient):
             )
 
             results = remote.make_results()
-            tic = datetime.datetime.fromisoformat(remote.json["started"])
-            toc = datetime.datetime.fromisoformat(remote.json["finished"])
-            elapsed_time = (toc - tic).total_seconds()
+            assert remote.start_datetime is not None and remote.end_datetime is not None
+            elapsed_time = (remote.end_datetime - remote.start_datetime).total_seconds()
 
             report = Report(
                 time=elapsed_time,
