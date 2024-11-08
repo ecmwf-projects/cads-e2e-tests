@@ -37,6 +37,8 @@ def _switch_off_download_checks(request: Request) -> Request:
 
 @attrs.define
 class TestClient(ApiClient):
+    __test__ = False
+
     @functools.cached_property
     def missing_licences(self) -> set[tuple[str, int]]:
         licences = _licences_to_set_of_tuples(self.get_licences())
@@ -109,26 +111,26 @@ class TestClient(ApiClient):
     def update_request_parameters(
         self,
         request: Request,
-        invalidate_cache: bool,
+        cache_key: str | None,
     ) -> Request:
         parameters = dict(request.parameters)
         if not parameters:
             parameters = self.random_parameters(request.collection_id)
-        if invalidate_cache:
-            parameters.setdefault("no_cache", datetime.datetime.now().isoformat())
+        if cache_key is not None:
+            parameters.setdefault(cache_key, datetime.datetime.now().isoformat())
         return Request(
             parameters=parameters,
             **request.model_dump(exclude={"parameters"}),
         )
 
     def _make_report(
-        self, request: Request, invalidate_cache: bool, download: bool
+        self, request: Request, cache_key: str | None, download: bool
     ) -> Report:
         report = Report(request=request)
 
         tracebacks: list[str] = []
         with utils.catch_exceptions(tracebacks, logger=LOGGER):
-            request = self.update_request_parameters(request, invalidate_cache)
+            request = self.update_request_parameters(request, cache_key)
             report = Report(
                 request=request,
                 **report.model_dump(exclude={"request"}),
@@ -174,18 +176,18 @@ class TestClient(ApiClient):
 
     @joblib.delayed  # type: ignore[misc]
     def _delayed_make_report(
-        self, request: Request, invalidate_cache: bool, download: bool
+        self, request: Request, cache_key: str | None, download: bool
     ) -> Report:
         with utils.tmp_working_dir():
             return self._make_report(
-                request=request, invalidate_cache=invalidate_cache, download=download
+                request=request, cache_key=cache_key, download=download
             )
 
     def make_reports(
         self,
         requests: Sequence[Request] | None = None,
         reports_path: str | Path | None = None,
-        invalidate_cache: bool = True,
+        cache_key: str | None = None,
         n_jobs: int = 1,
         verbose: int = 0,
         regex_pattern: str = "",
@@ -216,7 +218,7 @@ class TestClient(ApiClient):
         reports: list[Report] = parallel(
             self._delayed_make_report(
                 request=request,
-                invalidate_cache=invalidate_cache,
+                cache_key=cache_key,
                 download=download,
             )
             for request in requests
