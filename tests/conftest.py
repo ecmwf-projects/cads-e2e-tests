@@ -29,4 +29,4 @@ def url() -> str:
 def client(key: str, url: str) -> TestClient:
     from cads_e2e_tests.client import TestClient
 
-    return TestClient(key=key, url=url, maximum_tries=0)
+    return TestClient(key=key, url=url, maximum_tries=1)
