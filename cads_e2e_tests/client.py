@@ -70,7 +70,7 @@ class TestClient(ApiClient):
         if not parameters:
             parameters = self.random_parameters(request.collection_id)
         if invalidate_cache:
-            parameters.setdefault("_timestamp", datetime.datetime.now().isoformat())
+            parameters.setdefault("no_cache", datetime.datetime.now().isoformat())
         return Request(
             parameters=parameters,
             **request.model_dump(exclude={"parameters"}),
