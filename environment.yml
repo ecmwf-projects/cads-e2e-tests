@@ -9,7 +9,7 @@ channels:
 # DO NOT EDIT ABOVE THIS LINE, ADD DEPENDENCIES BELOW AS SHOWN IN THE EXAMPLE
 dependencies:
 - attrs
-- cads-api-client>=1.4.0
+- cads-api-client>=1.5.2
 - joblib
 - pydantic
 - pyyaml

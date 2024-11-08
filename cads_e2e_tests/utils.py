@@ -1,8 +1,10 @@
 import contextlib
 import dataclasses
+import datetime
 import hashlib
 import logging
 import os
+import random
 import tempfile
 import traceback
 from typing import Iterator, Type
@@ -51,3 +53,11 @@ class TargetInfo:
     @property
     def size(self) -> int:
         return os.path.getsize(self.target)
+
+
+def random_date(start: str, end: str) -> str:
+    start_date = datetime.date.fromisoformat(start)
+    end_date = datetime.date.fromisoformat(end)
+    days = random.randint(0, (end_date - start_date).days)
+    random_date = start_date + datetime.timedelta(days=days)
+    return random_date.isoformat()

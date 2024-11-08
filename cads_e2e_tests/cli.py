@@ -40,7 +40,7 @@ def make_reports(
     ] = "reports.json",
     invalidate_cache: Annotated[
         bool,
-        Option(help="Whether to invalidate the cache using the no_cache key"),
+        Option(help="Whether to invalidate the cache"),
     ] = True,
     n_jobs: Annotated[
         int,
@@ -58,6 +58,10 @@ def make_reports(
         bool,
         Option(help="Whether to download the results"),
     ] = True,
+    cache_key: Annotated[
+        str,
+        Option(help="Key used to invalidate cache"),
+    ] = "_timestamp",
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -70,7 +74,7 @@ def make_reports(
     reports = client.make_reports(
         requests=requests,
         reports_path=reports_path,
-        invalidate_cache=invalidate_cache,
+        cache_key=cache_key if invalidate_cache else None,
         n_jobs=n_jobs,
         verbose=verbose,
         regex_pattern=regex_pattern,

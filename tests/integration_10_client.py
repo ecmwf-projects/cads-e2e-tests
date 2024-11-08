@@ -17,9 +17,7 @@ def dummy_request() -> Request:
 
 
 def test_client_make_reports(client: TestClient, dummy_request: Request) -> None:
-    (actual_report,) = client.make_reports(
-        requests=[dummy_request], invalidate_cache=False
-    )
+    (actual_report,) = client.make_reports(requests=[dummy_request], cache_key=None)
 
     request_uid = actual_report.request_uid
     assert uuid.UUID(request_uid)
@@ -48,7 +46,7 @@ def test_client_make_reports_no_download(
     client: TestClient, dummy_request: Request
 ) -> None:
     (actual_report,) = client.make_reports(
-        requests=[dummy_request], invalidate_cache=False, download=False
+        requests=[dummy_request], cache_key=None, download=False
     )
 
     request_uid = actual_report.request_uid
@@ -75,21 +73,21 @@ def test_client_make_reports_no_download(
 
 
 @pytest.mark.parametrize(
-    "invalidate_cache,expected_parameters",
+    "cache_key,expected_parameters",
     [
-        (False, {"size"}),
-        (True, {"size", "no_cache"}),
+        (None, {"size"}),
+        ("nocache", {"size", "nocache"}),
     ],
 )
 def test_client_cache(
     client: TestClient,
     dummy_request: Request,
-    invalidate_cache: bool,
+    cache_key: str | None,
     expected_parameters: set[str],
 ) -> None:
     (report,) = client.make_reports(
         requests=[dummy_request],
-        invalidate_cache=invalidate_cache,
+        cache_key=cache_key,
     )
     actual_parameters = set(report.request.parameters)
     assert actual_parameters == expected_parameters
@@ -102,7 +100,7 @@ def test_client_write_reports(
     expected_report = client.make_reports(
         requests=[dummy_request],
         reports_path=report_path,
-        invalidate_cache=False,
+        cache_key=None,
     )
     actual_report = load_reports(report_path.open())
     assert expected_report == actual_report
@@ -147,9 +145,7 @@ def test_client_checks(
         checks=checks, **dummy_request.model_dump(exclude={"checks"})
     )
 
-    (report,) = client.make_reports(
-        requests=[request_with_checks], invalidate_cache=False
-    )
+    (report,) = client.make_reports(requests=[request_with_checks], cache_key=None)
     assert report.request.checks == checks
 
     print(report.tracebacks)
@@ -160,9 +156,33 @@ def test_client_checks(
 
 def test_client_random_request(client: TestClient) -> None:
     request = Request(collection_id="test-adaptor-url")
-    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
+    (report,) = client.make_reports(requests=[request], cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
+
+
+def test_client_random_request_widgets(client: TestClient) -> None:
+    request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
+    (report,) = client.make_reports(requests=[request], cache_key=None)
+    parameters = report.request.parameters
+    assert set(parameters) == {
+        "altitude",
+        "date",
+        "format",
+        "location",
+        "max_5",
+        "sky_type",
+        "time_reference",
+        "time_step",
+    }
+    assert parameters["altitude"] == -999
+    assert re.match(r"^\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}$", parameters["date"])
+    assert isinstance(parameters["format"], str)
+    assert set(parameters["location"]) == {"latitude", "longitude"}
+    assert isinstance(parameters["max_5"], str)
+    assert isinstance(parameters["sky_type"], str)
+    assert isinstance(parameters["time_reference"], str)
+    assert isinstance(parameters["time_step"], str)
 
 
 def test_client_no_requests(key: str, url: str) -> None:
@@ -172,7 +192,7 @@ def test_client_no_requests(key: str, url: str) -> None:
             return ["test-adaptor-url"]
 
     client = MockClient(key=key, url=url)
-    (report,) = client.make_reports(requests=None, invalidate_cache=False)
+    (report,) = client.make_reports(requests=None, cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
@@ -180,13 +200,13 @@ def test_client_no_requests(key: str, url: str) -> None:
 def test_client_regex_pattern(client: TestClient, dummy_request: Request) -> None:
     requests = [dummy_request, Request(collection_id="foo")]
     (report,) = client.make_reports(
-        requests=requests, invalidate_cache=False, regex_pattern="test-*"
+        requests=requests, cache_key=None, regex_pattern="test-*"
     )
     assert report.request.collection_id == "test-adaptor-dummy"
 
 
 def test_client_unreachable_collection(client: TestClient) -> None:
     request = Request(collection_id="foo")
-    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
+    (report,) = client.make_reports(requests=[request], cache_key=None)
     (traceback,) = report.tracebacks
     assert "404 Client Error" in traceback

@@ -39,3 +39,12 @@ def test_utils_target(tmp_path: Path) -> None:
     assert target_info.checksum == "acbd18db4cc2f85cedef654fccc4a4d8"
     assert target_info.size == 3
     assert target_info.extension == ".txt"
+
+
+def test_utils_random_date() -> None:
+    assert utils.random_date("2000-01-01", "2000-01-01") == "2000-01-01"
+    assert utils.random_date("2000-01-01", "2000-01-03") in [
+        "2000-01-01",
+        "2000-01-02",
+        "2000-01-03",
+    ]

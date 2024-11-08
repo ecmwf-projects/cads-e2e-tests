@@ -21,7 +21,7 @@ def key() -> str:
 def url() -> str:
     return os.getenv(
         "CADS_API_URL",
-        "https://cds-dev-bopen.copernicus-climate.eu/api",
+        "https://cds-stable-bopen.copernicus-climate.eu/api",
     )
 
 

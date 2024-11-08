@@ -37,6 +37,8 @@ def _switch_off_download_checks(request: Request) -> Request:
 
 @attrs.define
 class TestClient(ApiClient):
+    __test__ = False
+
     @functools.cached_property
     def missing_licences(self) -> set[tuple[str, int]]:
         licences = _licences_to_set_of_tuples(self.get_licences())
@@ -53,37 +55,82 @@ class TestClient(ApiClient):
         return collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
-        parameters = self.apply_constraints(collection_id)
+        # Random selection using constraints
+        collection = self.get_collection(collection_id)
+        parameters = collection.process.apply_constraints()
         for key in list(parameters):
-            if choices := self.apply_constraints(collection_id, **parameters)[key]:
+            if choices := collection.process.apply_constraints(**parameters)[key]:
                 parameters[key] = random.choice(choices)
             else:
-                parameters.pop(key)
-        return parameters
+                parameters[key] = []
+
+        # Add required widgets
+        widgets_to_skip = set(parameters)
+        for widget in collection.form:
+            if widget["type"] in ("ExclusiveFrameWidget", "InclusiveFrameWidget"):
+                widgets_to_skip.add(widget["name"])
+                widgets_to_skip.update(widget["widgets"])
+
+        for widget in collection.form:
+            name = widget["name"]
+            if not widget.get("required") or name in widgets_to_skip:
+                continue
+
+            match widget["type"]:
+                case "StringChoiceWidget" | "StringListWidget":
+                    parameters[name] = random.choice(widget["details"]["values"])
+                case "GeographicLocationWidget":
+                    location = {}
+                    for coord, details in widget["details"].items():
+                        location[coord] = round(
+                            random.uniform(*details["range"].values()),
+                            details["precision"],
+                        )
+                    parameters[name] = location
+                case "FreeformInputWidget":
+                    value = widget["details"]["default"]
+                    if isinstance(value, list):
+                        value = random.choice(value)
+                    parameters[name] = value
+                case "DateRangeWidget":
+                    start = widget["details"]["minStart"]
+                    end = widget["details"]["maxEnd"]
+                    start = utils.random_date(start, end)
+                    end = utils.random_date(start, end)
+                    parameters[name] = f"{start}/{end}"
+                case "StringListArrayWidget":
+                    values = []
+                    for group in widget["details"]["groups"]:
+                        values.extend(group["values"])
+                    parameters[name] = random.choice(values)
+                case widget_type:
+                    raise NotImplementedError(f"{widget_type=}")
+
+        return {k: v for k, v in parameters.items() if v != []}
 
     def update_request_parameters(
         self,
         request: Request,
-        invalidate_cache: bool,
+        cache_key: str | None,
     ) -> Request:
         parameters = dict(request.parameters)
         if not parameters:
             parameters = self.random_parameters(request.collection_id)
-        if invalidate_cache:
-            parameters.setdefault("no_cache", datetime.datetime.now().isoformat())
+        if cache_key is not None:
+            parameters.setdefault(cache_key, datetime.datetime.now().isoformat())
         return Request(
             parameters=parameters,
             **request.model_dump(exclude={"parameters"}),
         )
 
     def _make_report(
-        self, request: Request, invalidate_cache: bool, download: bool
+        self, request: Request, cache_key: str | None, download: bool
     ) -> Report:
         report = Report(request=request)
 
         tracebacks: list[str] = []
         with utils.catch_exceptions(tracebacks, logger=LOGGER):
-            request = self.update_request_parameters(request, invalidate_cache)
+            request = self.update_request_parameters(request, cache_key)
             report = Report(
                 request=request,
                 **report.model_dump(exclude={"request"}),
@@ -129,18 +176,18 @@ class TestClient(ApiClient):
 
     @joblib.delayed  # type: ignore[misc]
     def _delayed_make_report(
-        self, request: Request, invalidate_cache: bool, download: bool
+        self, request: Request, cache_key: str | None, download: bool
     ) -> Report:
         with utils.tmp_working_dir():
             return self._make_report(
-                request=request, invalidate_cache=invalidate_cache, download=download
+                request=request, cache_key=cache_key, download=download
             )
 
     def make_reports(
         self,
         requests: Sequence[Request] | None = None,
         reports_path: str | Path | None = None,
-        invalidate_cache: bool = True,
+        cache_key: str | None = None,
         n_jobs: int = 1,
         verbose: int = 0,
         regex_pattern: str = "",
@@ -171,7 +218,7 @@ class TestClient(ApiClient):
         reports: list[Report] = parallel(
             self._delayed_make_report(
                 request=request,
-                invalidate_cache=invalidate_cache,
+                cache_key=cache_key,
                 download=download,
             )
             for request in requests
