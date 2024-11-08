@@ -86,7 +86,10 @@ class TestClient(ApiClient):
                         )
                     parameters[name] = location
                 case "FreeformInputWidget":
-                    (parameters[name],) = widget["details"]["default"]
+                    value = widget["details"]["default"]
+                    if isinstance(value, list):
+                        value = random.choice(value)
+                    parameters[name] = value
                 case "DateRangeWidget":
                     start = widget["details"]["minStart"]
                     end = widget["details"]["maxEnd"]

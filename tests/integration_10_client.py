@@ -165,6 +165,30 @@ def test_client_random_request(client: TestClient) -> None:
     assert not report.tracebacks
 
 
+def test_client_random_request_widgets(client: TestClient) -> None:
+    request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
+    (report,) = client.make_reports(requests=[request], invalidate_cache=False)
+    parameters = report.request.parameters
+    assert set(parameters) == {
+        "altitude",
+        "date",
+        "format",
+        "location",
+        "max_5",
+        "sky_type",
+        "time_reference",
+        "time_step",
+    }
+    assert parameters["altitude"] == -999
+    assert re.match(r"^\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}$", parameters["date"])
+    assert isinstance(parameters["format"], str)
+    assert set(parameters["location"]) == {"latitude", "longitude"}
+    assert isinstance(parameters["max_5"], str)
+    assert isinstance(parameters["sky_type"], str)
+    assert isinstance(parameters["time_reference"], str)
+    assert isinstance(parameters["time_step"], str)
+
+
 def test_client_no_requests(key: str, url: str) -> None:
     class MockClient(TestClient):
         @property
