@@ -53,13 +53,55 @@ class TestClient(ApiClient):
         return collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
-        parameters = self.apply_constraints(collection_id)
+        # Random selection using constraints
+        collection = self.get_collection(collection_id)
+        parameters = collection.process.apply_constraints()
         for key in list(parameters):
-            if choices := self.apply_constraints(collection_id, **parameters)[key]:
+            if choices := collection.process.apply_constraints(**parameters)[key]:
                 parameters[key] = random.choice(choices)
             else:
-                parameters.pop(key)
-        return parameters
+                parameters[key] = []
+
+        # Add required widgets
+        widgets_to_skip = set(parameters)
+        for widget in collection.form:
+            if widget["type"] in ("ExclusiveFrameWidget", "InclusiveFrameWidget"):
+                widgets_to_skip.add(widget["name"])
+                widgets_to_skip.update(widget["widgets"])
+
+        for widget in collection.form:
+            name = widget["name"]
+            if not widget.get("required") or name in widgets_to_skip:
+                continue
+
+            match widget["type"]:
+                case "StringChoiceWidget" | "StringListWidget":
+                    parameters[name] = random.choice(widget["details"]["values"])
+                case "GeographicLocationWidget":
+                    location = {}
+                    for coord, details in widget["details"].items():
+                        location[coord] = round(
+                            random.uniform(*details["range"].values()),
+                            details["precision"],
+                        )
+                    parameters[name] = location
+                case "FreeformInputWidget":
+                    (parameters[name],) = widget["details"]["default"]
+                case "DateRangeWidget":
+                    start = widget["details"]["minStart"]
+                    end = widget["details"]["maxEnd"]
+                    start = utils.random_date(start, end)
+                    end = utils.random_date(start, end)
+                    parameters[name] = f"{start}/{end}"
+                case "StringListArrayWidget":
+                    values = []
+                    for group in widget["details"]["groups"]:
+                        values.extend(group["values"])
+                    parameters[name] = random.choice(values)
+                case widget_type:
+                    raise NotImplementedError(f"{widget_type=}")
+
+        return {k: v for k, v in parameters.items() if v != []}
 
     def update_request_parameters(
         self,
