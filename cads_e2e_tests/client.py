@@ -45,7 +45,7 @@ class TestClient(ApiClient):
         accepted_licences = _licences_to_set_of_tuples(self.get_accepted_licences())
         return licences - accepted_licences
 
-    @property
+    @functools.cached_property
     def collection_ids(self) -> list[str]:
         collection_ids = []
         collections: Collections | None = self.get_collections()
@@ -55,8 +55,9 @@ class TestClient(ApiClient):
         return collection_ids
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
-        # Random selection using constraints
         collection = self.get_collection(collection_id)
+
+        # Random selection based on constraints
         parameters = collection.process.apply_constraints()
         for key in list(parameters):
             if choices := collection.process.apply_constraints(**parameters)[key]:
@@ -64,16 +65,28 @@ class TestClient(ApiClient):
             else:
                 parameters[key] = []
 
-        # Add required widgets
+        # Choose widgets to process
         widgets_to_skip = set(parameters)
         for widget in collection.form:
-            if widget["type"] in ("ExclusiveFrameWidget", "InclusiveFrameWidget"):
-                widgets_to_skip.add(widget["name"])
-                widgets_to_skip.update(widget["widgets"])
+            name = widget["name"]
+            if not widget.get("required"):
+                widgets_to_skip.add(name)
 
+            match widget["type"]:
+                case "ExclusiveFrameWidget" | "InclusiveFrameWidget":
+                    widgets_to_skip.add(name)
+                    widgets_to_skip.update(widget["widgets"])
+                case "DateRangeWidget":
+                    if date := parameters.get(name):
+                        # Select one day
+                        start = date.split("/")[0]
+                        end = date.split("/")[-1]
+                        parameters[name] = "/".join([utils.random_date(start, end)] * 2)
+
+        # Process widgets
         for widget in collection.form:
             name = widget["name"]
-            if not widget.get("required") or name in widgets_to_skip:
+            if name in widgets_to_skip:
                 continue
 
             match widget["type"]:
