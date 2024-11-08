@@ -95,9 +95,7 @@ class TestClient(ApiClient):
                 case "DateRangeWidget":
                     start = widget["details"]["minStart"]
                     end = widget["details"]["maxEnd"]
-                    start = utils.random_date(start, end)
-                    end = utils.random_date(start, end)
-                    parameters[name] = f"{start}/{end}"
+                    parameters[name] = "/".join([utils.random_date(start, end)] * 2)
                 case "StringListArrayWidget":
                     values = []
                     for group in widget["details"]["groups"]:
