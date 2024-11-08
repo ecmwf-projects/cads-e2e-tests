@@ -40,7 +40,7 @@ def make_reports(
     ] = "reports.json",
     invalidate_cache: Annotated[
         bool,
-        Option(help="Whether to invalidate the cache using the _timestamp parameter"),
+        Option(help="Whether to invalidate the cache using the no_cache key"),
     ] = True,
     n_jobs: Annotated[
         int,
