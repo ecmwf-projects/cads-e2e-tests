@@ -78,7 +78,7 @@ def test_client_make_reports_no_download(
     "invalidate_cache,expected_parameters",
     [
         (False, {"size"}),
-        (True, {"size", "_timestamp"}),
+        (True, {"size", "no_cache"}),
     ],
 )
 def test_client_cache(
