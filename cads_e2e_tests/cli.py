@@ -60,7 +60,7 @@ def make_reports(
     ] = True,
     cache_key: Annotated[
         str,
-        Option(help="Key used to invalidate cache"),
+        Option(help="Key used to invalidate the cache"),
     ] = "_timestamp",
 ) -> None:
     """CADS E2E Tests."""
