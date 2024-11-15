@@ -10,8 +10,8 @@ from typing import Any, Sequence
 
 import attrs
 import joblib
-from cads_api_client import ApiClient
-from cads_api_client.catalogue import Collections
+from datapi import ApiClient
+from datapi.catalogue import Collections
 
 from . import models, utils
 from .models import Checks, Report, Request

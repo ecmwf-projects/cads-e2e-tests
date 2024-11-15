@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "attrs",
-  "cads-api-client>=1.5.2",
+  "datapi",
   "joblib",
   "pydantic",
   "pyyaml",
