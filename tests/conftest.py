@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 @pytest.fixture()
 def key() -> str:
     return os.getenv(
-        "CADS_API_KEY",
+        "DATAPI_KEY",
         "00000000-0000-4000-a000-000000000000",
     )
 
@@ -20,7 +20,7 @@ def key() -> str:
 @pytest.fixture()
 def url() -> str:
     return os.getenv(
-        "CADS_API_URL",
+        "DATAPI_URL",
         "https://cds-stable-bopen.copernicus-climate.eu/api",
     )
 
