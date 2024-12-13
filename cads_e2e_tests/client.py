@@ -64,7 +64,7 @@ class TestClient(ApiClient):
                 parameters[key] = random.choice(value)
             for k, v in collection.process.apply_constraints(**parameters).items():
                 if v == []:
-                    parameters[k] == v
+                    parameters[k] = v
 
         # Choose widgets to process
         widgets_to_skip = set(parameters)
