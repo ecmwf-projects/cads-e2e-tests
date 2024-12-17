@@ -59,11 +59,12 @@ class TestClient(ApiClient):
 
         # Random selection based on constraints
         parameters = collection.process.apply_constraints()
-        for key in list(parameters):
-            if choices := collection.process.apply_constraints(**parameters)[key]:
-                parameters[key] = random.choice(choices)
-            else:
-                parameters[key] = []
+        for key in sorted(parameters):
+            if value := parameters[key]:
+                parameters[key] = random.choice(value)
+            for k, v in collection.process.apply_constraints(**parameters).items():
+                if k > key or v == []:
+                    parameters[k] = v
 
         # Choose widgets to process
         widgets_to_skip = set(parameters)
