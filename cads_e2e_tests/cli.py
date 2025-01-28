@@ -42,7 +42,7 @@ def make_reports(
         bool,
         Option(help="Whether to invalidate the cache"),
     ] = True,
-    n_jobs: Annotated[
+    n_concurrent_jobs: Annotated[
         int,
         Option(help="Number of concurrent requests"),
     ] = 1,
@@ -54,6 +54,12 @@ def make_reports(
         str,
         Option(help="Regex pattern used to filter collection IDs"),
     ] = r"^(?!test-|provider-).*(?<!-complete)$",
+    n_random_jobs_per_dataset: Annotated[
+        int,
+        Option(
+            help="Number of random requests for each dataset (only used when requests_path=None)"
+        ),
+    ] = 1,
     download: Annotated[
         bool,
         Option(help="Whether to download the results"),
@@ -75,9 +81,10 @@ def make_reports(
         requests=requests,
         reports_path=reports_path,
         cache_key=cache_key if invalidate_cache else None,
-        n_jobs=n_jobs,
+        n_concurrent_jobs=n_concurrent_jobs,
         verbose=verbose,
         regex_pattern=regex_pattern,
+        n_random_jobs_per_dataset=n_random_jobs_per_dataset,
         download=download,
     )
     echo_passed_vs_failed(reports)

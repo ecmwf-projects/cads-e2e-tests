@@ -200,9 +200,10 @@ class TestClient(ApiClient):
         requests: Sequence[Request] | None = None,
         reports_path: str | Path | None = None,
         cache_key: str | None = None,
-        n_jobs: int = 1,
+        n_concurrent_jobs: int = 1,
         verbose: int = 0,
         regex_pattern: str = "",
+        n_random_jobs_per_dataset: int = 1,
         download: bool = True,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
@@ -215,6 +216,7 @@ class TestClient(ApiClient):
             requests = [
                 Request(collection_id=collection_id)
                 for collection_id in self.collection_ids
+                for _ in range(n_random_jobs_per_dataset)
             ]
 
         requests = [
@@ -226,7 +228,7 @@ class TestClient(ApiClient):
         if not download:
             requests = [_switch_off_download_checks(request) for request in requests]
 
-        parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
+        parallel = joblib.Parallel(n_jobs=n_concurrent_jobs, verbose=verbose)
         reports: list[Report] = parallel(
             self._delayed_make_report(
                 request=request,
