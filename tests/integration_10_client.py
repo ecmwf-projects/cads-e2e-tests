@@ -210,3 +210,10 @@ def test_client_unreachable_collection(client: TestClient) -> None:
     (report,) = client.make_reports(requests=[request], cache_key=None)
     (traceback,) = report.tracebacks
     assert "404 Client Error" in traceback
+
+
+@pytest.mark.parametrize("n_repeats", [1, 2])
+def test_n_repeats(client: TestClient, dummy_request: Request, n_repeats: int) -> None:
+    requests = [dummy_request]
+    reports = client.make_reports(requests=requests, n_repeats=n_repeats)
+    assert len(reports) == n_repeats
