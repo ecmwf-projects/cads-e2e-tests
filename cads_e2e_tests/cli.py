@@ -65,7 +65,7 @@ def make_reports(
     n_repeats: Annotated[
         int,
         Option(
-            help="Number of times to repeat each request (random requests are recomputed)"
+            help="Number of times to repeat each request (random requests are regenerated)"
         ),
     ] = 1,
 ) -> None:
