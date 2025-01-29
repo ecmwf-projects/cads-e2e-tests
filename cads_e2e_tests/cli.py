@@ -62,6 +62,12 @@ def make_reports(
         str,
         Option(help="Key used to invalidate the cache"),
     ] = "_no_cache",
+    n_repeats: Annotated[
+        int,
+        Option(
+            help="Number of times to repeat each request (random requests are regenerated)"
+        ),
+    ] = 1,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -79,5 +85,6 @@ def make_reports(
         verbose=verbose,
         regex_pattern=regex_pattern,
         download=download,
+        n_repeats=n_repeats,
     )
     echo_passed_vs_failed(reports)

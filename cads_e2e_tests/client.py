@@ -204,6 +204,7 @@ class TestClient(ApiClient):
         verbose: int = 0,
         regex_pattern: str = "",
         download: bool = True,
+        n_repeats: int = 1,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -233,7 +234,7 @@ class TestClient(ApiClient):
                 cache_key=cache_key,
                 download=download,
             )
-            for request in requests
+            for request in requests * n_repeats
         )
         if reports_path:
             with open(reports_path, "w") as fp:
