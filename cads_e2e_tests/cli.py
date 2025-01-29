@@ -61,7 +61,7 @@ def make_reports(
     cache_key: Annotated[
         str,
         Option(help="Key used to invalidate the cache"),
-    ] = "_timestamp",
+    ] = "_no_cache",
     n_repeats: Annotated[
         int,
         Option(
