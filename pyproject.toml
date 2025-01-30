@@ -15,7 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "attrs",
-  "datapi",
+  "datapi>=0.2.0",
   "joblib",
   "pydantic",
   "pyyaml",
