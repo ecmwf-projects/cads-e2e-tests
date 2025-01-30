@@ -58,11 +58,11 @@ class TestClient(ApiClient):
         collection = self.get_collection(collection_id)
 
         # Random selection based on constraints
-        parameters = collection.process.apply_constraints()
+        parameters = collection.process.apply_constraints({})
         for key in sorted(parameters):
             if value := parameters[key]:
                 parameters[key] = random.choice(value)
-            for k, v in collection.process.apply_constraints(**parameters).items():
+            for k, v in collection.process.apply_constraints(parameters).items():
                 if k > key or v == []:
                     parameters[k] = v
 
@@ -148,7 +148,7 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"request"}),
             )
 
-            remote = self.submit(request.collection_id, **request.parameters)
+            remote = self.submit(request.collection_id, request.parameters)
             report = Report(
                 request_uid=remote.request_uid,
                 **report.model_dump(exclude={"request_uid"}),
