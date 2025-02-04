@@ -68,6 +68,16 @@ def make_reports(
             help="Number of times to repeat each request (random requests are regenerated)"
         ),
     ] = 1,
+    cyclic: Annotated[
+        bool,
+        Option(
+            help="Whether to repeat requests cyclically ([1, 2, 1, 2]) or not ([1, 1, 2, 2])"
+        ),
+    ] = True,
+    randomise: Annotated[
+        bool,
+        Option(help="Whether to randomise the order of the requests"),
+    ] = False,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -86,5 +96,7 @@ def make_reports(
         regex_pattern=regex_pattern,
         download=download,
         n_repeats=n_repeats,
+        cyclic=cyclic,
+        randomise=randomise,
     )
     echo_passed_vs_failed(reports)

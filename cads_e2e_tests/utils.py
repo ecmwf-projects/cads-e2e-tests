@@ -7,7 +7,7 @@ import os
 import random
 import tempfile
 import traceback
-from typing import Iterator, Type
+from typing import Any, Iterator, Type
 
 
 @contextlib.contextmanager
@@ -61,3 +61,26 @@ def random_date(start: str, end: str) -> str:
     days = random.randint(0, (end_date - start_date).days)
     random_date = start_date + datetime.timedelta(days=days)
     return random_date.isoformat()
+
+
+def reorder(
+    requests: list[Any],
+    cyclic: bool,
+    randomise: bool,
+    n_repeats: int,
+) -> list[Any]:
+    if cyclic:
+        output = []
+        for _ in range(n_repeats):
+            output.extend(
+                random.sample(requests, len(requests)) if randomise else requests
+            )
+        return output
+
+    return [
+        request
+        for request in (
+            random.sample(requests, len(requests)) if randomise else requests
+        )
+        for _ in range(n_repeats)
+    ]

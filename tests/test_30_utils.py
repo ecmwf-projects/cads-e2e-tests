@@ -3,6 +3,8 @@ import logging
 import os
 from pathlib import Path
 
+import pytest
+
 from cads_e2e_tests import utils
 
 does_not_raise = contextlib.nullcontext
@@ -48,3 +50,18 @@ def test_utils_random_date() -> None:
         "2000-01-02",
         "2000-01-03",
     ]
+
+
+@pytest.mark.parametrize(
+    "cyclic,randomise,expected",
+    [
+        (True, False, [[1, 2, 1, 2]]),
+        (False, False, [[1, 1, 2, 2]]),
+        (True, True, [[1, 2, 1, 2], [2, 1, 2, 1], [1, 2, 2, 1], [2, 1, 1, 2]]),
+        (False, True, [[1, 1, 2, 2], [2, 2, 1, 1]]),
+    ],
+)
+def test_reorder(cyclic: bool, randomise: bool, expected: set[list[int]]) -> None:
+    for _ in range(100):
+        actual = utils.reorder([1, 2], cyclic=cyclic, randomise=randomise, n_repeats=2)
+        assert actual in expected

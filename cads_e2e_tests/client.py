@@ -214,6 +214,8 @@ class TestClient(ApiClient):
         regex_pattern: str = "",
         download: bool = True,
         n_repeats: int = 1,
+        cyclic: bool = True,
+        randomise: bool = False,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -236,6 +238,13 @@ class TestClient(ApiClient):
         if not download:
             requests = [_switch_off_download_checks(request) for request in requests]
 
+        requests = utils.reorder(
+            requests,
+            cyclic=cyclic,
+            randomise=randomise,
+            n_repeats=n_repeats,
+        )
+
         parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
         reports: list[Report] = parallel(
             self._delayed_make_report(
@@ -243,7 +252,7 @@ class TestClient(ApiClient):
                 cache_key=cache_key,
                 download=download,
             )
-            for request in requests * n_repeats
+            for request in requests
         )
         if reports_path:
             with open(reports_path, "w") as fp:
