@@ -95,10 +95,19 @@ class TestClient(ApiClient):
                     parameters[name] = random.choice(widget["details"]["values"])
                 case "GeographicLocationWidget":
                     location = {}
-                    for coord, details in widget["details"].items():
+                    for coord in ("latitude", "longitude"):
+                        details = widget.get("details", {}).get(coord, {})
+                        match coord:
+                            case "latitude":
+                                coord_range = {"min": -90, "max": 90}
+                            case "longitude":
+                                coord_range = {"min": -180, "max": 180}
+                            case _:
+                                coord_range = {}
+                        coord_range |= details.get("range", {})
                         location[coord] = round(
-                            random.uniform(*details["range"].values()),
-                            details["precision"],
+                            random.uniform(coord_range["min"], coord_range["max"]),
+                            details.get("precision", 1),
                         )
                     parameters[name] = location
                 case "FreeformInputWidget":
