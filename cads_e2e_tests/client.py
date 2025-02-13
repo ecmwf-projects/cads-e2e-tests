@@ -52,7 +52,12 @@ class TestClient(ApiClient):
         while collections is not None:
             collection_ids.extend(collections.collection_ids)
             collections = collections.next
-        return collection_ids
+        return [
+            collection_id
+            for collection_id in collection_ids
+            if self.get_collection(collection_id).json.get("cads:disabled_reason")
+            is None
+        ]
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
