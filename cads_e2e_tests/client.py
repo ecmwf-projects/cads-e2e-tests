@@ -64,11 +64,13 @@ class TestClient(ApiClient):
 
         # Random selection based on constraints
         parameters = collection.apply_constraints({})
-        for key in sorted(parameters):
+        keys = list(parameters)
+        random.shuffle(keys)
+        for key in keys:
             if value := parameters[key]:
-                parameters[key] = random.choice(value)
+                parameters[key] = [random.choice(value)]
             for k, v in collection.apply_constraints(parameters).items():
-                if k > key or v == []:
+                if keys.index(k) > keys.index(key) or v == []:
                     parameters[k] = v
 
         # Choose widgets to process
@@ -132,7 +134,7 @@ class TestClient(ApiClient):
                 case widget_type:
                     raise NotImplementedError(f"{widget_type=}")
 
-        return {k: v for k, v in parameters.items() if v != []}
+        return {k: v for k, v in sorted(parameters.items()) if v != []}
 
     def update_request_parameters(
         self,
