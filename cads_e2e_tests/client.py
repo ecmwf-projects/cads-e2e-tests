@@ -61,22 +61,30 @@ class TestClient(ApiClient):
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
+        forms = {
+            name: form for form in collection.form if (name := form.pop("name", None))
+        }
 
         # Random selection based on constraints
         parameters = collection.apply_constraints({})
-        keys = list(parameters)
-        random.shuffle(keys)
-        for key in keys:
-            if value := parameters[key]:
-                parameters[key] = [random.choice(value)]
+        names = list(parameters)
+        random.shuffle(names)
+        for name in names:
+            if value := parameters[name]:
+                value = random.choice(value)
+                if forms.get(name, {}).get("type") in [
+                    "StringListWidget",
+                    "StringListArrayWidget",
+                ]:
+                    value = [value]
+                parameters[name] = value
             for k, v in collection.apply_constraints(parameters).items():
-                if keys.index(k) > keys.index(key) or v == []:
+                if names.index(k) > names.index(name) or v == []:
                     parameters[k] = v
 
         # Choose widgets to process
         widgets_to_skip = set(parameters)
-        for widget in collection.form:
-            name = widget["name"]
+        for name, widget in forms.items():
             if not widget.get("required"):
                 widgets_to_skip.add(name)
 
@@ -89,17 +97,20 @@ class TestClient(ApiClient):
                         # Select one day
                         start = date.split("/")[0]
                         end = date.split("/")[-1]
-                        parameters[name] = "/".join([utils.random_date(start, end)] * 2)
+                        parameters[name] = [
+                            "/".join([utils.random_date(start, end)] * 2)
+                        ]
 
         # Process widgets
-        for widget in collection.form:
-            name = widget["name"]
+        for name, widget in forms.items():
             if name in widgets_to_skip:
                 continue
 
             match widget["type"]:
-                case "StringChoiceWidget" | "StringListWidget":
+                case "StringChoiceWidget":
                     parameters[name] = random.choice(widget["details"]["values"])
+                case "StringListWidget":
+                    parameters[name] = [random.choice(widget["details"]["values"])]
                 case "GeographicLocationWidget":
                     location = {}
                     for coord in ("latitude", "longitude"):
@@ -118,23 +129,20 @@ class TestClient(ApiClient):
                         )
                     parameters[name] = location
                 case "FreeformInputWidget":
-                    value = widget["details"]["default"]
-                    if isinstance(value, list):
-                        value = random.choice(value)
-                    parameters[name] = value
+                    parameters[name] = widget["details"]["default"]
                 case "DateRangeWidget":
                     start = widget["details"]["minStart"]
                     end = widget["details"]["maxEnd"]
-                    parameters[name] = "/".join([utils.random_date(start, end)] * 2)
+                    parameters[name] = ["/".join([utils.random_date(start, end)] * 2)]
                 case "StringListArrayWidget":
                     values = []
                     for group in widget["details"]["groups"]:
                         values.extend(group["values"])
-                    parameters[name] = random.choice(values)
+                    parameters[name] = [random.choice(values)]
                 case widget_type:
                     raise NotImplementedError(f"{widget_type=}")
 
-        return {k: v for k, v in sorted(parameters.items()) if v != []}
+        return {name: value for name in forms if (value := parameters.get(name))}
 
     def update_request_parameters(
         self,
