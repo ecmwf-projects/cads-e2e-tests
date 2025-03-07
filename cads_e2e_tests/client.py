@@ -63,11 +63,11 @@ class TestClient(ApiClient):
         collection = self.get_collection(collection_id)
 
         # Random selection based on constraints
-        parameters = collection.process.apply_constraints({})
+        parameters = collection.apply_constraints({})
         for key in sorted(parameters):
             if value := parameters[key]:
                 parameters[key] = random.choice(value)
-            for k, v in collection.process.apply_constraints(parameters).items():
+            for k, v in collection.apply_constraints(parameters).items():
                 if k > key or v == []:
                     parameters[k] = v
 
@@ -164,14 +164,14 @@ class TestClient(ApiClient):
 
             remote = self.submit(request.collection_id, request.parameters)
             report = Report(
-                request_uid=remote.request_uid,
+                request_uid=remote.request_id,
                 **report.model_dump(exclude={"request_uid"}),
             )
 
-            results = remote.make_results()
+            results = remote.get_results()
             time.sleep(1)  # Make sure start/end datetimes are updated
-            assert remote.start_datetime is not None and remote.end_datetime is not None
-            elapsed_time = (remote.end_datetime - remote.start_datetime).total_seconds()
+            assert remote.started_at is not None and remote.finished_at is not None
+            elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
 
             report = Report(
                 time=elapsed_time,
