@@ -18,6 +18,12 @@ from .models import Checks, Report, Request
 
 LOGGER = logging.getLogger(__name__)
 DOWNLOAD_CHECKS = {"checksum", "extension", "size"}
+LIST_WIDGETS = [
+    "DateRangeWidget",
+    "DateRangeWidget",
+    "StringListArrayWidget",
+    "StringListWidget",
+]
 
 
 def _licences_to_set_of_tuples(
@@ -33,6 +39,16 @@ def _switch_off_download_checks(request: Request) -> Request:
         **request.checks.model_dump(exclude=DOWNLOAD_CHECKS),
     )
     return Request(checks=checks, **request.model_dump(exclude={"checks"}))
+
+
+def _ensure_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if value is None:
+        return []
+    if isinstance(value, tuple | set | range):
+        return list(value)
+    return [value]
 
 
 @attrs.define
@@ -61,20 +77,24 @@ class TestClient(ApiClient):
 
     def random_parameters(self, collection_id: str) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
+        forms = {
+            name: form for form in collection.form if (name := form.pop("name", None))
+        }
 
         # Random selection based on constraints
         parameters = collection.apply_constraints({})
-        for key in sorted(parameters):
-            if value := parameters[key]:
-                parameters[key] = random.choice(value)
+        names = list(parameters)
+        random.shuffle(names)
+        for name in names:
+            if value := parameters[name]:
+                parameters[name] = random.choice(value)
             for k, v in collection.apply_constraints(parameters).items():
-                if k > key or v == []:
+                if names.index(k) > names.index(name) or v == []:
                     parameters[k] = v
 
         # Choose widgets to process
         widgets_to_skip = set(parameters)
-        for widget in collection.form:
-            name = widget["name"]
+        for name, widget in forms.items():
             if not widget.get("required"):
                 widgets_to_skip.add(name)
 
@@ -90,8 +110,7 @@ class TestClient(ApiClient):
                         parameters[name] = "/".join([utils.random_date(start, end)] * 2)
 
         # Process widgets
-        for widget in collection.form:
-            name = widget["name"]
+        for name, widget in forms.items():
             if name in widgets_to_skip:
                 continue
 
@@ -116,10 +135,7 @@ class TestClient(ApiClient):
                         )
                     parameters[name] = location
                 case "FreeformInputWidget":
-                    value = widget["details"]["default"]
-                    if isinstance(value, list):
-                        value = random.choice(value)
-                    parameters[name] = value
+                    parameters[name] = widget["details"]["default"]
                 case "DateRangeWidget":
                     start = widget["details"]["minStart"]
                     end = widget["details"]["maxEnd"]
@@ -132,7 +148,11 @@ class TestClient(ApiClient):
                 case widget_type:
                     raise NotImplementedError(f"{widget_type=}")
 
-        return {k: v for k, v in parameters.items() if v != []}
+        return {
+            name: _ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
+            for name, widget in forms.items()
+            if (value := parameters.get(name))
+        }
 
     def update_request_parameters(
         self,
