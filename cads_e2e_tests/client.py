@@ -20,7 +20,6 @@ LOGGER = logging.getLogger(__name__)
 DOWNLOAD_CHECKS = {"checksum", "extension", "size"}
 LIST_WIDGETS = [
     "DateRangeWidget",
-    "DateRangeWidget",
     "StringListArrayWidget",
     "StringListWidget",
 ]
