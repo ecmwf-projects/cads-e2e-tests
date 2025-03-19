@@ -1,3 +1,4 @@
+import datetime
 import re
 import uuid
 from pathlib import Path
@@ -16,38 +17,21 @@ def dummy_request() -> Request:
     )
 
 
-def test_client_make_reports(client: TestClient, dummy_request: Request) -> None:
-    (actual_report,) = client.make_reports(requests=[dummy_request], cache_key=None)
-
-    request_uid = actual_report.request_uid
-    assert uuid.UUID(request_uid)
-
-    time = actual_report.time
-    assert isinstance(time, float)
-    assert time > 0
-
-    expected_report = Report(
-        request=Request(
-            collection_id="test-adaptor-dummy",
-            parameters={"size": 0},
-        ),
-        request_uid=request_uid,
-        extension=".grib",
-        size=0,
-        checksum="d41d8cd98f00b204e9800998ecf8427e",
-        time=time,
-        content_length=0,
-        content_type="application/x-grib",
-    )
-    assert actual_report == expected_report
-
-
-def test_client_make_reports_no_download(
-    client: TestClient, dummy_request: Request
+@pytest.mark.parametrize("download", [True, False])
+def test_client_make_reports(
+    client: TestClient, dummy_request: Request, download: bool
 ) -> None:
     (actual_report,) = client.make_reports(
-        requests=[dummy_request], cache_key=None, download=False
+        requests=[dummy_request], cache_key=None, download=download
     )
+
+    started_at = actual_report.started_at
+    assert isinstance(started_at, datetime.datetime)
+
+    finished_at = actual_report.finished_at
+    assert isinstance(finished_at, datetime.datetime)
+
+    assert (finished_at - started_at).total_seconds() >= 1
 
     request_uid = actual_report.request_uid
     assert uuid.UUID(request_uid)
@@ -61,10 +45,12 @@ def test_client_make_reports_no_download(
             collection_id="test-adaptor-dummy",
             parameters={"size": 0},
         ),
+        started_at=started_at,
+        finished_at=finished_at,
         request_uid=request_uid,
-        extension=None,
-        size=None,
-        checksum=None,
+        extension=".grib" if download else None,
+        size=0 if download else None,
+        checksum="d41d8cd98f00b204e9800998ecf8427e" if download else None,
         time=time,
         content_length=0,
         content_type="application/x-grib",
@@ -176,10 +162,14 @@ def test_client_random_request_widgets(client: TestClient) -> None:
         "time_step",
     }
     assert parameters["altitude"] == -999
-    assert re.match(r"^\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}$", parameters["date"])
+    assert (
+        isinstance(parameters["date"], list)
+        and len(parameters["date"]) == 1
+        and re.match(r"^\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}$", parameters["date"][0])
+    )
     assert isinstance(parameters["format"], str)
     assert set(parameters["location"]) == {"latitude", "longitude"}
-    assert isinstance(parameters["max_5"], str)
+    assert isinstance(parameters["max_5"], list) and len(parameters["max_5"]) == 1
     assert isinstance(parameters["sky_type"], str)
     assert isinstance(parameters["time_reference"], str)
     assert isinstance(parameters["time_step"], str)

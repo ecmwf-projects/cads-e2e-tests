@@ -1,10 +1,11 @@
+import datetime
 import json
 import logging
 from typing import Any, BinaryIO, ContextManager, TextIO
 
 import pydantic_core
 import yaml
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from . import exceptions, utils
 
@@ -58,6 +59,8 @@ class Request(BaseModel):
 
 class Report(BaseModel):
     request: Request
+    started_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+    finished_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     tracebacks: list[str] = []
     request_uid: str | None = None
     checksum: str | None = None
