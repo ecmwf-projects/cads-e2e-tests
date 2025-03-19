@@ -66,6 +66,8 @@ def test_cli_make_report_from_yaml(
                 content_type="application/x-grib",
             ),
         ),
+        started_at=actual_report.started_at,
+        finished_at=actual_report.finished_at,
         request_uid=actual_report.request_uid,
         extension=extension,
         size=size,
