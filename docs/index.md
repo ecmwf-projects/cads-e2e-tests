@@ -6,6 +6,7 @@ CADS E2E Tests.
 :caption: 'Contents:'
 :maxdepth: 2
 
+README.md
 API Reference <_api/cads_e2e_tests/index>
 ```
 
