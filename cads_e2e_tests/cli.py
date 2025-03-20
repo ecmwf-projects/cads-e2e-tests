@@ -78,6 +78,10 @@ def make_reports(
         bool,
         Option(help="Whether to randomise the order of the requests"),
     ] = False,
+    datapi_maximum_tries: Annotated[
+        int,
+        Option(help="Maximum number of retries"),
+    ] = 1,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -86,7 +90,11 @@ def make_reports(
     else:
         requests = None
 
-    client = TestClient(url=url, key=key, maximum_tries=1)
+    client = TestClient(
+        url=url,
+        key=key,
+        maximum_tries=datapi_maximum_tries,
+    )
     reports = client.make_reports(
         requests=requests,
         reports_path=reports_path,
