@@ -56,6 +56,9 @@ class TestClient(ApiClient):
 
     @functools.cached_property
     def missing_licences(self) -> set[tuple[str, int]]:
+        if self.check_authentication().get("role") == "anonymous":
+            return set()
+
         licences = _licences_to_set_of_tuples(self.get_licences())
         accepted_licences = _licences_to_set_of_tuples(self.get_accepted_licences())
         return licences - accepted_licences
