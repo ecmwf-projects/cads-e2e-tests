@@ -3,13 +3,15 @@ import json
 import logging
 from typing import Any, BinaryIO, ContextManager, TextIO
 
-import pydantic_core
 import yaml
 from pydantic import BaseModel, Field
 
 from . import exceptions, utils
 
 LOGGER = logging.getLogger(__name__)
+
+if not hasattr(BaseModel, "model_dump"):  # pydantic 1
+    setattr(BaseModel, "model_dump", BaseModel.dict)
 
 
 class Checks(BaseModel):
@@ -108,7 +110,14 @@ def load_reports(fp: TextIO | BinaryIO) -> list[Report]:
 
 
 def dump_reports(reports: list[Report], fp: TextIO) -> None:
-    json.dump(pydantic_core.to_jsonable_python(reports), fp)
+    try:
+        import pydantic_core
+    except ImportError:
+        from pydantic.json import pydantic_encoder
+
+        json.dump(reports, fp, default=pydantic_encoder)
+    else:
+        json.dump(pydantic_core.to_jsonable_python(reports), fp)
 
 
 def load_requests(fp: TextIO | BinaryIO) -> list[Request]:
