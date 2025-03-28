@@ -226,8 +226,8 @@ class TestClient(ApiClient):
         download: bool,
         log_level: str | None,
     ) -> Report:
-        if log_level:
-            logging.basicConfig(level=log_level)
+        if log_level is not None:
+            logging.basicConfig(level=log_level.upper())
         with utils.tmp_working_dir():
             return self._make_report(
                 request=request, cache_key=cache_key, download=download
