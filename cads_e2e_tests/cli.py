@@ -48,8 +48,12 @@ def make_reports(
     ] = 1,
     verbose: Annotated[
         int,
-        Option(help="The verbosity level"),
+        Option(help="The verbosity level of joblib"),
     ] = 10,
+    log_level: Annotated[
+        str,
+        Option(help="Set the root logger level to the specified level"),
+    ] = "INFO",
     regex_pattern: Annotated[
         str,
         Option(help="Regex pattern used to filter collection IDs"),
@@ -106,5 +110,6 @@ def make_reports(
         n_repeats=n_repeats,
         cyclic=cyclic,
         randomise=randomise,
+        log_level=log_level,
     )
     echo_passed_vs_failed(reports)

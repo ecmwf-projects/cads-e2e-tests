@@ -220,8 +220,14 @@ class TestClient(ApiClient):
 
     @joblib.delayed  # type: ignore[misc]
     def _delayed_make_report(
-        self, request: Request, cache_key: str | None, download: bool
+        self,
+        request: Request,
+        cache_key: str | None,
+        download: bool,
+        log_level: str | None,
     ) -> Report:
+        if log_level:
+            logging.basicConfig(level=log_level)
         with utils.tmp_working_dir():
             return self._make_report(
                 request=request, cache_key=cache_key, download=download
@@ -239,6 +245,7 @@ class TestClient(ApiClient):
         n_repeats: int = 1,
         cyclic: bool = True,
         randomise: bool = False,
+        log_level: str | None = None,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
             raise FileExistsError(reports_path)
@@ -274,6 +281,7 @@ class TestClient(ApiClient):
                 request=request,
                 cache_key=cache_key,
                 download=download,
+                log_level=log_level,
             )
             for request in requests
         )
