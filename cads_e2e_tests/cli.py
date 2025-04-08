@@ -88,7 +88,7 @@ def make_reports(
     ] = 1,
     max_runtime: Annotated[
         float | None,
-        Option(help="Maximum time (in seconds) a request is allowed to run"),
+        Option(help="Maximum time (in seconds) each request is allowed to run"),
     ] = None,
 ) -> None:
     """CADS E2E Tests."""
