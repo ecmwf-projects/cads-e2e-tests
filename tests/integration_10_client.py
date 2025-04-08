@@ -157,7 +157,7 @@ def test_client_random_request_widgets(client: TestClient) -> None:
         for widget in client.get_collection("test-layout-sandbox-nogecko-dataset").form
         if widget.get("required")
     }
-    assert required_fields <= set(report.request.parameters)
+    assert required_fields == set(report.request.parameters)
 
     (traceback,) = report.tracebacks
     assert traceback.endswith("UrlNoDataError\n")

@@ -159,7 +159,7 @@ class TestClient(ApiClient):
         return {
             name: _ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
             for name, widget in forms.items()
-            if (value := parameters.get(name)) is not None
+            if _ensure_list(value := parameters.get(name))
         }
 
     def update_request_parameters(
