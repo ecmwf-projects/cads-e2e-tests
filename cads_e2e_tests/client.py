@@ -182,10 +182,9 @@ class TestClient(ApiClient):
     ) -> None:
         sleep = 1.0
         while not remote.results_ready:
-            time.sleep(sleep)
-            sleep = min(sleep * 1.5, self.sleep_max)
             if (
                 max_runtime is not None
+                and remote.finished_at is None
                 and (started_at := remote.started_at) is not None
             ):
                 if started_at.tzinfo is None:
@@ -193,6 +192,8 @@ class TestClient(ApiClient):
                 timedelta = datetime.datetime.now(datetime.timezone.utc) - started_at
                 if timedelta.total_seconds() > max_runtime:
                     raise TimeoutError("Maximum runtime exceeded.")
+            time.sleep(sleep)
+            sleep = min(sleep * 1.5, self.sleep_max)
 
     def _make_report(
         self,
