@@ -184,7 +184,6 @@ class TestClient(ApiClient):
         while not remote.results_ready:
             if (
                 max_runtime is not None
-                and remote.finished_at is None
                 and (started_at := remote.started_at) is not None
             ):
                 if started_at.tzinfo is None:
