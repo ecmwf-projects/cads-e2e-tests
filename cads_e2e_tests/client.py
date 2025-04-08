@@ -10,7 +10,7 @@ from typing import Any, Sequence
 
 import attrs
 import joblib
-from datapi import ApiClient
+from datapi import ApiClient, Remote
 from datapi.catalogue import Collections
 
 from . import models, utils
@@ -137,7 +137,13 @@ class TestClient(ApiClient):
                         )
                     parameters[name] = location
                 case "FreeformInputWidget":
-                    parameters[name] = widget["details"]["default"]
+                    if (value := widget["details"].get("default")) is None:
+                        match widget["details"].get("dtype"):
+                            case "string":
+                                value = ""
+                            case "float":
+                                value = -999.0
+                    parameters[name] = value
                 case "DateRangeWidget":
                     start = widget["details"]["minStart"]
                     end = widget["details"]["maxEnd"]
@@ -153,7 +159,7 @@ class TestClient(ApiClient):
         return {
             name: _ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
             for name, widget in forms.items()
-            if (value := parameters.get(name))
+            if (value := parameters.get(name)) is not None
         }
 
     def update_request_parameters(
@@ -171,8 +177,29 @@ class TestClient(ApiClient):
             **request.model_dump(exclude={"parameters"}),
         )
 
+    def _wait_on_results_with_timeout(
+        self, remote: Remote, max_runtime: float | None
+    ) -> None:
+        sleep = 1.0
+        while not remote.results_ready:
+            time.sleep(sleep)
+            sleep = min(sleep * 1.5, self.sleep_max)
+            if (
+                max_runtime is not None
+                and (started_at := remote.started_at) is not None
+            ):
+                if started_at.tzinfo is None:
+                    started_at = started_at.replace(tzinfo=datetime.timezone.utc)
+                timedelta = datetime.datetime.now(datetime.timezone.utc) - started_at
+                if timedelta.total_seconds() > max_runtime:
+                    raise TimeoutError("Maximum runtime exceeded.")
+
     def _make_report(
-        self, request: Request, cache_key: str | None, download: bool
+        self,
+        request: Request,
+        cache_key: str | None,
+        download: bool,
+        max_runtime: float | None,
     ) -> Report:
         report = Report(request=request)
 
@@ -190,7 +217,9 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"request_uid"}),
             )
 
+            self._wait_on_results_with_timeout(remote, max_runtime)
             results = remote.get_results()
+
             time.sleep(1)  # Make sure start/end datetimes are updated
             assert remote.started_at is not None and remote.finished_at is not None
             elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
@@ -224,13 +253,17 @@ class TestClient(ApiClient):
         request: Request,
         cache_key: str | None,
         download: bool,
+        max_runtime: float | None,
         log_level: str | None,
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
         with utils.tmp_working_dir():
             return self._make_report(
-                request=request, cache_key=cache_key, download=download
+                request=request,
+                cache_key=cache_key,
+                download=download,
+                max_runtime=max_runtime,
             )
 
     def make_reports(
@@ -245,6 +278,7 @@ class TestClient(ApiClient):
         n_repeats: int = 1,
         cyclic: bool = True,
         randomise: bool = False,
+        max_runtime: float | None = None,
         log_level: str | None = None,
     ) -> list[Report]:
         if reports_path and os.path.exists(reports_path):
@@ -281,6 +315,7 @@ class TestClient(ApiClient):
                 request=request,
                 cache_key=cache_key,
                 download=download,
+                max_runtime=max_runtime,
                 log_level=log_level,
             )
             for request in requests
