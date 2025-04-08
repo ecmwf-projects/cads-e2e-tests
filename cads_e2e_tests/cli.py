@@ -86,6 +86,10 @@ def make_reports(
         int,
         Option(help="Maximum number of retries"),
     ] = 1,
+    max_runtime: Annotated[
+        float | None,
+        Option(help="Maximum time (in seconds) each request is allowed to run"),
+    ] = None,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -110,6 +114,7 @@ def make_reports(
         n_repeats=n_repeats,
         cyclic=cyclic,
         randomise=randomise,
+        max_runtime=max_runtime,
         log_level=log_level,
     )
     echo_passed_vs_failed(reports)
