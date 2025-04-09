@@ -150,17 +150,36 @@ def test_client_random_request(client: TestClient) -> None:
 def test_client_random_request_widgets(client: TestClient) -> None:
     request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
     (report,) = client.make_reports(requests=[request], cache_key=None)
-    assert report.request.parameters
+    parameters = report.request.parameters
 
-    required_fields = {
-        widget["name"]
-        for widget in client.get_collection("test-layout-sandbox-nogecko-dataset").form
-        if widget.get("required")
+    assert set(parameters) == {
+        "altitude",
+        "date",
+        "format",
+        "location",
+        "max_5",
+        "sky_type",
+        "time_reference",
+        "time_step",
     }
-    assert required_fields == set(report.request.parameters)
 
-    (traceback,) = report.tracebacks
-    assert traceback.endswith("UrlNoDataError\n")
+    assert parameters["altitude"] == -999
+    assert (
+        isinstance(parameters["date"], list)
+        and len(parameters["date"]) == 1
+        and re.match(r"^\d{4}-\d{2}-\d{2}/\d{4}-\d{2}-\d{2}$", parameters["date"][0])
+    )
+    assert isinstance(parameters["format"], str)
+    assert set(parameters["location"]) == {"latitude", "longitude"}
+    assert isinstance(parameters["max_5"], list) and len(parameters["max_5"]) == 1
+    assert isinstance(parameters["sky_type"], str)
+    assert isinstance(parameters["time_reference"], str)
+    assert isinstance(parameters["time_step"], str)
+
+    assert -40 <= parameters["location"]["latitude"] <= 70
+    assert not parameters["location"]["latitude"] % 0.25
+    assert -150 <= parameters["location"]["longitude"] <= 110
+    assert not parameters["location"]["longitude"] % 0.5
 
 
 def test_client_no_requests(key: str, url: str) -> None:

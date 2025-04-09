@@ -7,7 +7,16 @@ import os
 import random
 import tempfile
 import traceback
-from typing import Any, Iterator, Type
+from typing import Any, Iterator, Literal, Type
+
+DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
+    "minY": -90.0,
+    "maxY": 90.0,
+    "minX": -180.0,
+    "maxX": 180.0,
+    "stepY": 0.001,
+    "stepX": 0.001,
+}
 
 
 @contextlib.contextmanager
@@ -84,3 +93,52 @@ def reorder(
         )
         for _ in range(n_repeats)
     ]
+
+
+def random_choice_from_range(min: float, max: float, step: float = 1.0) -> float:
+    assert step > 0 and max > min
+    return min + random.randint(0, int((max - min) / step)) * step
+
+
+def widget_random_selection(
+    widget_type: Literal[
+        "StringChoiceWidget",
+        "StringListWidget",
+        "GeographicLocationWidget",
+        "FreeformInputWidget",
+        "DateRangeWidget",
+        "StringListArrayWidget",
+    ],
+    **details: Any,
+) -> Any:
+    match widget_type:
+        case "StringChoiceWidget" | "StringListWidget":
+            return random.choice(details["values"])
+        case "GeographicLocationWidget":
+            details = DEFAULT_GEOGRAPHIC_LOCATION_DETAILS | details
+            return {
+                coord: random_choice_from_range(
+                    *[details[f"{prefix}{suffix}"] for prefix in ("min", "max", "step")]
+                )
+                for coord, suffix in zip(["latitude", "longitude"], ["Y", "X"])
+            }
+        case "FreeformInputWidget":
+            if (value := details.get("default")) is None:
+                match details.get("dtype"):
+                    case "float":
+                        value = 999.0
+                    case "int":
+                        value = 999
+                    case "string":
+                        value = ""
+            return value
+        case "DateRangeWidget":
+            return "/".join([random_date(details["minStart"], details["maxEnd"])] * 2)
+        case "StringListArrayWidget":
+            values = []
+            for group in details["groups"]:
+                values.extend(group["values"])
+            return random.choice(values)
+        case _:
+            print(widget_type)
+            raise NotImplementedError(f"{widget_type=}")
