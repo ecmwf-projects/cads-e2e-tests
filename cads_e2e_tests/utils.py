@@ -140,5 +140,4 @@ def widget_random_selection(
                 values.extend(group["values"])
             return random.choice(values)
         case _:
-            print(widget_type)
             raise NotImplementedError(f"{widget_type=}")
