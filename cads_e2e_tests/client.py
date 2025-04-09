@@ -115,46 +115,9 @@ class TestClient(ApiClient):
         for name, widget in forms.items():
             if name in widgets_to_skip:
                 continue
-
-            match widget["type"]:
-                case "StringChoiceWidget" | "StringListWidget":
-                    parameters[name] = random.choice(widget["details"]["values"])
-                case "GeographicLocationWidget":
-                    location = {}
-                    for coord in ("latitude", "longitude"):
-                        details = widget.get("details", {}).get(coord, {})
-                        match coord:
-                            case "latitude":
-                                coord_range = {"min": -90, "max": 90}
-                            case "longitude":
-                                coord_range = {"min": -180, "max": 180}
-                            case _:
-                                coord_range = {}
-                        coord_range |= details.get("range", {})
-                        location[coord] = round(
-                            random.uniform(coord_range["min"], coord_range["max"]),
-                            details.get("precision", 1),
-                        )
-                    parameters[name] = location
-                case "FreeformInputWidget":
-                    if (value := widget["details"].get("default")) is None:
-                        match widget["details"].get("dtype"):
-                            case "string":
-                                value = ""
-                            case "float":
-                                value = -999.0
-                    parameters[name] = value
-                case "DateRangeWidget":
-                    start = widget["details"]["minStart"]
-                    end = widget["details"]["maxEnd"]
-                    parameters[name] = "/".join([utils.random_date(start, end)] * 2)
-                case "StringListArrayWidget":
-                    values = []
-                    for group in widget["details"]["groups"]:
-                        values.extend(group["values"])
-                    parameters[name] = random.choice(values)
-                case widget_type:
-                    raise NotImplementedError(f"{widget_type=}")
+            parameters[name] = utils.widget_random_selection(
+                widget["type"], **widget.get("details", {})
+            )
 
         return {
             name: _ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
