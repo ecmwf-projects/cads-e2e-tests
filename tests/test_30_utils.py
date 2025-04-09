@@ -65,3 +65,8 @@ def test_reorder(cyclic: bool, randomise: bool, expected: set[list[int]]) -> Non
     for _ in range(100):
         actual = utils.reorder([1, 2], cyclic=cyclic, randomise=randomise, n_repeats=2)
         assert actual in expected
+
+
+def test_random_choiche_from_range() -> None:
+    for _ in range(100):
+        assert utils.random_choice_from_range(0, 0.2, 0.1) in [0, 0.1, 0.2]
