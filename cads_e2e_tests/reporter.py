@@ -72,7 +72,7 @@ def make_reports(
 
     parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
     reports: list[Report] = parallel(
-        client._delayed_make_report(
+        client.delayed_make_report(
             request=request,
             cache_key=cache_key,
             download=download,

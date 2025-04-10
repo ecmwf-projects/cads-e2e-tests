@@ -203,7 +203,7 @@ class TestClient(ApiClient):
         )
 
     @joblib.delayed  # type: ignore[misc]
-    def _delayed_make_report(
+    def delayed_make_report(
         self,
         request: Request,
         cache_key: str | None,
