@@ -1,23 +1,20 @@
 import datetime
 import functools
 import logging
-import os
 import random
-import re
 import time
-from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import attrs
 import joblib
 from datapi import ApiClient, Remote
 from datapi.catalogue import Collections
 
-from . import models, utils
-from .models import Checks, Report, Request
+from . import utils
+from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
-DOWNLOAD_CHECKS = {"checksum", "extension", "size"}
+
 LIST_WIDGETS = [
     "DateRangeWidget",
     "StringListArrayWidget",
@@ -29,15 +26,6 @@ def _licences_to_set_of_tuples(
     licences: list[dict[str, Any]],
 ) -> set[tuple[str, int]]:
     return {(licence["id"], licence["revision"]) for licence in licences}
-
-
-def _switch_off_download_checks(request: Request) -> Request:
-    checks_dict = dict.fromkeys(DOWNLOAD_CHECKS, None)
-    checks = Checks(
-        **checks_dict,
-        **request.checks.model_dump(exclude=DOWNLOAD_CHECKS),
-    )
-    return Request(checks=checks, **request.model_dump(exclude={"checks"}))
 
 
 def _ensure_list(value: Any) -> list[Any]:
@@ -62,6 +50,10 @@ class TestClient(ApiClient):
         licences = _licences_to_set_of_tuples(self.get_licences())
         accepted_licences = _licences_to_set_of_tuples(self.get_accepted_licences())
         return licences - accepted_licences
+
+    def accept_all_missing_licences(self) -> None:
+        for licence in self.missing_licences:
+            self.accept_licence(*licence)
 
     @functools.cached_property
     def collection_ids(self) -> list[str]:
@@ -140,7 +132,7 @@ class TestClient(ApiClient):
             **request.model_dump(exclude={"parameters"}),
         )
 
-    def _wait_on_results_with_timeout(
+    def wait_on_results_with_timeout(
         self, remote: Remote, max_runtime: float | None
     ) -> None:
         sleep = 1.0
@@ -157,7 +149,7 @@ class TestClient(ApiClient):
             time.sleep(sleep)
             sleep = min(sleep * 1.5, self.sleep_max)
 
-    def _make_report(
+    def make_report(
         self,
         request: Request,
         cache_key: str | None,
@@ -180,7 +172,7 @@ class TestClient(ApiClient):
                 **report.model_dump(exclude={"request_uid"}),
             )
 
-            self._wait_on_results_with_timeout(remote, max_runtime)
+            self.wait_on_results_with_timeout(remote, max_runtime)
             results = remote.get_results()
 
             time.sleep(1)  # Make sure start/end datetimes are updated
@@ -222,68 +214,9 @@ class TestClient(ApiClient):
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
         with utils.tmp_working_dir():
-            return self._make_report(
+            return self.make_report(
                 request=request,
                 cache_key=cache_key,
                 download=download,
                 max_runtime=max_runtime,
             )
-
-    def make_reports(
-        self,
-        requests: Sequence[Request] | None = None,
-        reports_path: str | Path | None = None,
-        cache_key: str | None = None,
-        n_jobs: int = 1,
-        verbose: int = 0,
-        regex_pattern: str = "",
-        download: bool = True,
-        n_repeats: int = 1,
-        cyclic: bool = True,
-        randomise: bool = False,
-        max_runtime: float | None = None,
-        log_level: str | None = None,
-    ) -> list[Report]:
-        if reports_path and os.path.exists(reports_path):
-            raise FileExistsError(reports_path)
-
-        for licence in self.missing_licences:
-            self.accept_licence(*licence)
-
-        if requests is None:
-            requests = [
-                Request(collection_id=collection_id)
-                for collection_id in self.collection_ids
-            ]
-
-        requests = [
-            request
-            for request in requests
-            if re.search(regex_pattern, request.collection_id)
-        ]
-
-        if not download:
-            requests = [_switch_off_download_checks(request) for request in requests]
-
-        requests = utils.reorder(
-            requests,
-            cyclic=cyclic,
-            randomise=randomise,
-            n_repeats=n_repeats,
-        )
-
-        parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
-        reports: list[Report] = parallel(
-            self._delayed_make_report(
-                request=request,
-                cache_key=cache_key,
-                download=download,
-                max_runtime=max_runtime,
-                log_level=log_level,
-            )
-            for request in requests
-        )
-        if reports_path:
-            with open(reports_path, "w") as fp:
-                models.dump_reports(reports, fp)
-        return reports

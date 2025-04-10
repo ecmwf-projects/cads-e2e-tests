@@ -22,7 +22,6 @@ except ImportError:  # pragma: no cover
     # Local copy or not installed with setuptools
     __version__ = "999"
 
-from .client import TestClient
 from .models import (
     Report,
     Request,
@@ -31,12 +30,13 @@ from .models import (
     load_reports,
     load_requests,
 )
+from .reporter import make_reports
 
 __all__ = [
     "__version__",
+    "make_reports",
     "Report",
     "Request",
-    "TestClient",
     "dump_reports",
     "dump_requests",
     "load_reports",

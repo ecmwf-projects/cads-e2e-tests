@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
 
 import pytest
-
-if TYPE_CHECKING:
-    from cads_e2e_tests.client import TestClient
 
 
 @pytest.fixture()
@@ -23,10 +19,3 @@ def url() -> str:
         "DATAPI_URL",
         "https://cds-stable-bopen.copernicus-climate.eu/api",
     )
-
-
-@pytest.fixture()
-def client(key: str, url: str) -> TestClient:
-    from cads_e2e_tests.client import TestClient
-
-    return TestClient(key=key, url=url, maximum_tries=1)

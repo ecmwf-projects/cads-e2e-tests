@@ -40,7 +40,7 @@ def test_cli_make_report_from_yaml(
     report_path = tmp_path / "report.json"
 
     make_reports(
-        key=key,
+        key=[key],
         url=url,
         requests_path=str(requests_path),
         reports_path=str(report_path),
