@@ -3,8 +3,7 @@ from typing import Annotated, Optional
 import typer
 from typer import Option
 
-from . import models
-from .client import TestClient
+from . import models, reporter
 from .models import Report
 
 
@@ -26,8 +25,8 @@ def echo_passed_vs_failed(reports: list[Report]) -> None:
 
 
 def make_reports(
-    url: Annotated[Optional[str], Option(help="CADS api url")] = None,  # noqa: UP007
-    key: Annotated[Optional[str], Option(help="CADS api key")] = None,  # noqa: UP007
+    url: Annotated[Optional[str], Option(help="API url")] = None,  # noqa: UP007
+    key: Annotated[list[str], Option(help="API key(s)")] = [],
     requests_path: Annotated[
         Optional[str],  # noqa: UP007
         Option(
@@ -82,14 +81,14 @@ def make_reports(
         bool,
         Option(help="Whether to randomise the order of the requests"),
     ] = False,
-    datapi_maximum_tries: Annotated[
-        int,
-        Option(help="Maximum number of retries"),
-    ] = 1,
     max_runtime: Annotated[
         float | None,
         Option(help="Maximum time (in seconds) each request is allowed to run"),
     ] = None,
+    datapi_maximum_tries: Annotated[
+        int,
+        Option(help="Maximum number of retries"),
+    ] = 1,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -98,12 +97,9 @@ def make_reports(
     else:
         requests = None
 
-    client = TestClient(
+    reports = reporter.make_reports(
         url=url,
-        key=key,
-        maximum_tries=datapi_maximum_tries,
-    )
-    reports = client.make_reports(
+        keys=key,
         requests=requests,
         reports_path=reports_path,
         cache_key=cache_key if invalidate_cache else None,
@@ -116,5 +112,6 @@ def make_reports(
         randomise=randomise,
         max_runtime=max_runtime,
         log_level=log_level,
+        maximum_tries=datapi_maximum_tries,
     )
     echo_passed_vs_failed(reports)

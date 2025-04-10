@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from cads_e2e_tests import make_reports
 from cads_e2e_tests.client import TestClient
 from cads_e2e_tests.models import Checks, Report, Request, load_reports
 
@@ -19,10 +20,10 @@ def dummy_request() -> Request:
 
 @pytest.mark.parametrize("download", [True, False])
 def test_client_make_reports(
-    client: TestClient, dummy_request: Request, download: bool
+    url: str, key: str, dummy_request: Request, download: bool
 ) -> None:
-    (actual_report,) = client.make_reports(
-        requests=[dummy_request], cache_key=None, download=download
+    (actual_report,) = make_reports(
+        url=url, keys=[key], requests=[dummy_request], cache_key=None, download=download
     )
 
     started_at = actual_report.started_at
@@ -66,12 +67,15 @@ def test_client_make_reports(
     ],
 )
 def test_client_cache(
-    client: TestClient,
+    url: str,
+    key: str,
     dummy_request: Request,
     cache_key: str | None,
     expected_parameters: set[str],
 ) -> None:
-    (report,) = client.make_reports(
+    (report,) = make_reports(
+        url=url,
+        keys=[key],
         requests=[dummy_request],
         cache_key=cache_key,
     )
@@ -80,10 +84,12 @@ def test_client_cache(
 
 
 def test_client_write_reports(
-    client: TestClient, dummy_request: Request, tmp_path: Path
+    url: str, key: str, dummy_request: Request, tmp_path: Path
 ) -> None:
     report_path = tmp_path / "report.json"
-    expected_report = client.make_reports(
+    expected_report = make_reports(
+        url=url,
+        keys=[key],
         requests=[dummy_request],
         reports_path=report_path,
         cache_key=None,
@@ -125,13 +131,15 @@ def test_client_write_reports(
     ],
 )
 def test_client_checks(
-    client: TestClient, dummy_request: Request, checks: Checks, expected_error: str
+    url: str, key: str, dummy_request: Request, checks: Checks, expected_error: str
 ) -> None:
     request_with_checks = Request(
         checks=checks, **dummy_request.model_dump(exclude={"checks"})
     )
 
-    (report,) = client.make_reports(requests=[request_with_checks], cache_key=None)
+    (report,) = make_reports(
+        url=url, keys=[key], requests=[request_with_checks], cache_key=None
+    )
     assert report.request.checks == checks
 
     print(report.tracebacks)
@@ -140,16 +148,22 @@ def test_client_checks(
     assert re.compile(expected_error).match(actual_error)
 
 
-def test_client_random_request(client: TestClient) -> None:
+def test_client_random_request(
+    url: str,
+    key: str,
+) -> None:
     request = Request(collection_id="test-adaptor-url")
-    (report,) = client.make_reports(requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
 
-def test_client_random_request_widgets(client: TestClient) -> None:
+def test_client_random_request_widgets(
+    url: str,
+    key: str,
+) -> None:
     request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
-    (report,) = client.make_reports(requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
     parameters = report.request.parameters
 
     assert set(parameters) == {
@@ -182,44 +196,48 @@ def test_client_random_request_widgets(client: TestClient) -> None:
     assert not parameters["location"]["longitude"] % 0.5
 
 
-def test_client_no_requests(key: str, url: str) -> None:
-    class MockClient(TestClient):
-        @property
-        def collection_ids(self) -> list[str]:
-            return ["test-adaptor-url"]
-
-    client = MockClient(key=key, url=url)
-    (report,) = client.make_reports(requests=None, cache_key=None)
+def test_client_no_requests(
+    monkeypatch: pytest.MonkeyPatch,
+    url: str,
+    key: str,
+) -> None:
+    monkeypatch.setattr(TestClient, "collection_ids", ["test-adaptor-url"])
+    (report,) = make_reports(url=url, keys=[key], requests=None, cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
 
-def test_client_regex_pattern(client: TestClient, dummy_request: Request) -> None:
+def test_client_regex_pattern(url: str, key: str, dummy_request: Request) -> None:
     requests = [dummy_request, Request(collection_id="foo")]
-    (report,) = client.make_reports(
-        requests=requests, cache_key=None, regex_pattern="test-*"
+    (report,) = make_reports(
+        url=url, keys=[key], requests=requests, cache_key=None, regex_pattern="test-*"
     )
     assert report.request.collection_id == "test-adaptor-dummy"
 
 
-def test_client_unreachable_collection(client: TestClient) -> None:
+def test_client_unreachable_collection(
+    url: str,
+    key: str,
+) -> None:
     request = Request(collection_id="foo")
-    (report,) = client.make_reports(requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
     (traceback,) = report.tracebacks
     assert "404 Client Error" in traceback
 
 
 @pytest.mark.parametrize("n_repeats", [1, 2])
-def test_n_repeats(client: TestClient, dummy_request: Request, n_repeats: int) -> None:
-    reports = client.make_reports(requests=[dummy_request], n_repeats=n_repeats)
+def test_n_repeats(url: str, key: str, dummy_request: Request, n_repeats: int) -> None:
+    reports = make_reports(
+        url=url, keys=[key], requests=[dummy_request], n_repeats=n_repeats
+    )
     assert len(reports) == n_repeats
 
 
-def test_max_runtime(client: TestClient, dummy_request: Request) -> None:
+def test_max_runtime(url: str, key: str, dummy_request: Request) -> None:
     requests = [dummy_request]
-    (report,) = client.make_reports(requests=requests, max_runtime=10)
+    (report,) = make_reports(url=url, keys=[key], requests=requests, max_runtime=10)
     assert not report.tracebacks
 
-    (report,) = client.make_reports(requests=requests, max_runtime=0)
+    (report,) = make_reports(url=url, keys=[key], requests=requests, max_runtime=0)
     (traceback,) = report.tracebacks
     assert traceback.endswith("TimeoutError: Maximum runtime exceeded.\n")
