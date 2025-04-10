@@ -27,8 +27,8 @@ REQUESTS_YAML = """# requests.yaml
 )
 def test_cli_make_report_from_yaml(
     capsys: CaptureFixture[str],
-    key: str,
     url: str,
+    keys: list[str],
     tmp_path: Path,
     download: bool,
     extension: str | None,
@@ -40,7 +40,7 @@ def test_cli_make_report_from_yaml(
     report_path = tmp_path / "report.json"
 
     make_reports(
-        key=[key],
+        key=keys,
         url=url,
         requests_path=str(requests_path),
         reports_path=str(report_path),

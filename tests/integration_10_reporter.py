@@ -20,10 +20,10 @@ def dummy_request() -> Request:
 
 @pytest.mark.parametrize("download", [True, False])
 def test_client_make_reports(
-    url: str, key: str, dummy_request: Request, download: bool
+    url: str, keys: list[str], dummy_request: Request, download: bool
 ) -> None:
     (actual_report,) = make_reports(
-        url=url, keys=[key], requests=[dummy_request], cache_key=None, download=download
+        url=url, keys=keys, requests=[dummy_request], cache_key=None, download=download
     )
 
     started_at = actual_report.started_at
@@ -68,14 +68,14 @@ def test_client_make_reports(
 )
 def test_client_cache(
     url: str,
-    key: str,
+    keys: list[str],
     dummy_request: Request,
     cache_key: str | None,
     expected_parameters: set[str],
 ) -> None:
     (report,) = make_reports(
         url=url,
-        keys=[key],
+        keys=keys,
         requests=[dummy_request],
         cache_key=cache_key,
     )
@@ -84,12 +84,12 @@ def test_client_cache(
 
 
 def test_client_write_reports(
-    url: str, key: str, dummy_request: Request, tmp_path: Path
+    url: str, keys: list[str], dummy_request: Request, tmp_path: Path
 ) -> None:
     report_path = tmp_path / "report.json"
     expected_report = make_reports(
         url=url,
-        keys=[key],
+        keys=keys,
         requests=[dummy_request],
         reports_path=report_path,
         cache_key=None,
@@ -131,14 +131,18 @@ def test_client_write_reports(
     ],
 )
 def test_client_checks(
-    url: str, key: str, dummy_request: Request, checks: Checks, expected_error: str
+    url: str,
+    keys: list[str],
+    dummy_request: Request,
+    checks: Checks,
+    expected_error: str,
 ) -> None:
     request_with_checks = Request(
         checks=checks, **dummy_request.model_dump(exclude={"checks"})
     )
 
     (report,) = make_reports(
-        url=url, keys=[key], requests=[request_with_checks], cache_key=None
+        url=url, keys=keys, requests=[request_with_checks], cache_key=None
     )
     assert report.request.checks == checks
 
@@ -148,22 +152,16 @@ def test_client_checks(
     assert re.compile(expected_error).match(actual_error)
 
 
-def test_client_random_request(
-    url: str,
-    key: str,
-) -> None:
+def test_client_random_request(url: str, keys: list[str]) -> None:
     request = Request(collection_id="test-adaptor-url")
-    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
 
-def test_client_random_request_widgets(
-    url: str,
-    key: str,
-) -> None:
+def test_client_random_request_widgets(url: str, keys: list[str]) -> None:
     request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
-    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
     parameters = report.request.parameters
 
     assert set(parameters) == {
@@ -197,47 +195,46 @@ def test_client_random_request_widgets(
 
 
 def test_client_no_requests(
-    monkeypatch: pytest.MonkeyPatch,
-    url: str,
-    key: str,
+    monkeypatch: pytest.MonkeyPatch, url: str, keys: list[str]
 ) -> None:
     monkeypatch.setattr(TestClient, "collection_ids", ["test-adaptor-url"])
-    (report,) = make_reports(url=url, keys=[key], requests=None, cache_key=None)
+    (report,) = make_reports(url=url, keys=keys, requests=None, cache_key=None)
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
 
-def test_client_regex_pattern(url: str, key: str, dummy_request: Request) -> None:
+def test_client_regex_pattern(
+    url: str, keys: list[str], dummy_request: Request
+) -> None:
     requests = [dummy_request, Request(collection_id="foo")]
     (report,) = make_reports(
-        url=url, keys=[key], requests=requests, cache_key=None, regex_pattern="test-*"
+        url=url, keys=keys, requests=requests, cache_key=None, regex_pattern="test-*"
     )
     assert report.request.collection_id == "test-adaptor-dummy"
 
 
-def test_client_unreachable_collection(
-    url: str,
-    key: str,
-) -> None:
+def test_client_unreachable_collection(url: str, keys: list[str]) -> None:
     request = Request(collection_id="foo")
-    (report,) = make_reports(url=url, keys=[key], requests=[request], cache_key=None)
+    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
     (traceback,) = report.tracebacks
     assert "404 Client Error" in traceback
 
 
 @pytest.mark.parametrize("n_repeats", [1, 2])
-def test_n_repeats(url: str, key: str, dummy_request: Request, n_repeats: int) -> None:
+def test_n_repeats(
+    url: str, keys: list[str], dummy_request: Request, n_repeats: int
+) -> None:
     reports = make_reports(
-        url=url, keys=[key], requests=[dummy_request], n_repeats=n_repeats
+        url=url, keys=keys, requests=[dummy_request], n_repeats=n_repeats
     )
     assert len(reports) == n_repeats
 
 
-def test_max_runtime(url: str, key: str, dummy_request: Request) -> None:
+def test_max_runtime(url: str, keys: list[str], dummy_request: Request) -> None:
     requests = [dummy_request]
-    (report,) = make_reports(url=url, keys=[key], requests=requests, max_runtime=10)
+    (report,) = make_reports(url=url, keys=keys, requests=requests, max_runtime=10)
     assert not report.tracebacks
 
-    (report,) = make_reports(url=url, keys=[key], requests=requests, max_runtime=0)
+    (report,) = make_reports(url=url, keys=keys, requests=requests, max_runtime=0)
     (traceback,) = report.tracebacks
     assert traceback.endswith("TimeoutError: Maximum runtime exceeded.\n")
