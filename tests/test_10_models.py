@@ -47,7 +47,7 @@ def test_report_run_checks(report: Report) -> None:
 
 
 def test_dump_and_load_reports(report: Report, tmp_path: Path) -> None:
-    report_path = tmp_path / "report.json"
+    report_path = tmp_path / "report.jsonl"
     with report_path.open("a") as fp:
         models.dump_report(report, fp)
         models.dump_report(report, fp)
