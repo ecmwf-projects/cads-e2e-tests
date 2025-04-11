@@ -197,12 +197,10 @@ class TestClient(ApiClient):
         if not tracebacks:
             tracebacks = report.run_checks()
 
-        report = Report(
+        return Report(
             tracebacks=tracebacks,
             **report.model_dump(exclude={"tracebacks", "finished_at"}),
         )
-
-        return report
 
     @joblib.delayed  # type: ignore[misc]
     def delayed_make_report(
