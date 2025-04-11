@@ -11,6 +11,7 @@ from .client import TestClient
 from .models import Checks, Report, Request
 
 DOWNLOAD_CHECKS = {"checksum", "extension", "size"}
+REQUESTS_DEFAULT = None
 
 
 def _switch_off_download_checks(request: Request) -> Request:
@@ -25,17 +26,17 @@ def _switch_off_download_checks(request: Request) -> Request:
 def reports_generator(
     url: str | None,
     keys: list[str],
-    requests: Sequence[Request] | None = None,
-    cache_key: str | None = None,
-    n_jobs: int = 1,
-    verbose: int = 0,
-    regex_pattern: str = "",
-    download: bool = True,
-    n_repeats: int = 1,
-    cyclic: bool = True,
-    randomise: bool = False,
-    max_runtime: float | None = None,
-    log_level: str | None = None,
+    requests: Sequence[Request] | None,
+    cache_key: str | None,
+    n_jobs: int,
+    verbose: int,
+    regex_pattern: str,
+    download: bool,
+    n_repeats: int,
+    cyclic: bool,
+    randomise: bool,
+    max_runtime: float | None,
+    log_level: str | None,
     **kwargs: Any,
 ) -> Iterator[Report]:
     clients = [
