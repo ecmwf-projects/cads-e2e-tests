@@ -1,6 +1,5 @@
 import itertools
 import re
-from pathlib import Path
 from typing import Any, Iterator, Sequence
 
 import joblib
@@ -26,7 +25,6 @@ def reports_generator(
     url: str | None,
     keys: list[str],
     requests: Sequence[Request] | None = None,
-    reports_path: str | Path | None = None,
     cache_key: str | None = None,
     n_jobs: int = 1,
     verbose: int = 0,
