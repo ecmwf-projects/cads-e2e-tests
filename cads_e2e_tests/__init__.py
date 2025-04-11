@@ -30,11 +30,12 @@ from .models import (
     load_reports,
     load_requests,
 )
-from .reporter import make_reports
+from .reporter import make_reports, reports_generator
 
 __all__ = [
     "__version__",
     "make_reports",
+    "reports_generator",
     "Report",
     "Request",
     "dump_reports",

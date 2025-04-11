@@ -2,7 +2,7 @@ import itertools
 import os
 import re
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Iterator, Sequence
 
 import joblib
 
@@ -22,11 +22,10 @@ def _switch_off_download_checks(request: Request) -> Request:
     return Request(checks=checks, **request.model_dump(exclude={"checks"}))
 
 
-def make_reports(
+def reports_generator(
     url: str | None,
     keys: list[str],
     requests: Sequence[Request] | None = None,
-    reports_path: str | Path | None = None,
     cache_key: str | None = None,
     n_jobs: int = 1,
     verbose: int = 0,
@@ -38,10 +37,7 @@ def make_reports(
     max_runtime: float | None = None,
     log_level: str | None = None,
     **kwargs: Any,
-) -> list[Report]:
-    if reports_path and os.path.exists(reports_path):
-        raise FileExistsError(reports_path)
-
+) -> Iterator[Report]:
     clients = [
         TestClient(url=url, key=key, **kwargs) for key in ([None] if not keys else keys)
     ]
@@ -70,8 +66,10 @@ def make_reports(
         n_repeats=n_repeats,
     )
 
-    parallel = joblib.Parallel(n_jobs=n_jobs, verbose=verbose)
-    reports: list[Report] = parallel(
+    parallel = joblib.Parallel(
+        n_jobs=n_jobs, verbose=verbose, return_as="generator_unordered"
+    )
+    reports: Iterator[Report] = parallel(
         client.delayed_make_report(
             request=request,
             cache_key=cache_key,
@@ -81,7 +79,49 @@ def make_reports(
         )
         for client, request in zip(itertools.cycle(clients), requests)
     )
-    if reports_path:
-        with open(reports_path, "w") as fp:
-            models.dump_reports(reports, fp)
+    return reports
+
+
+def make_reports(
+    url: str | None,
+    keys: list[str],
+    requests: Sequence[Request] | None = None,
+    reports_path: str | Path | None = None,
+    cache_key: str | None = None,
+    n_jobs: int = 1,
+    verbose: int = 0,
+    regex_pattern: str = "",
+    download: bool = True,
+    n_repeats: int = 1,
+    cyclic: bool = True,
+    randomise: bool = False,
+    max_runtime: float | None = None,
+    log_level: str | None = None,
+    **kwargs: Any,
+) -> list[Report]:
+    if reports_path and os.path.exists(reports_path):
+        raise FileExistsError(reports_path)
+
+    reports = []
+    for report in reports_generator(
+        url=url,
+        keys=keys,
+        requests=requests,
+        cache_key=cache_key,
+        n_jobs=n_jobs,
+        verbose=verbose,
+        regex_pattern=regex_pattern,
+        download=download,
+        n_repeats=n_repeats,
+        cyclic=cyclic,
+        randomise=randomise,
+        max_runtime=max_runtime,
+        log_level=log_level,
+        **kwargs,
+    ):
+        reports.append(report)
+        if reports_path:
+            with open(reports_path, "w") as fp:
+                models.dump_reports(reports, fp)
+
     return reports
