@@ -76,7 +76,6 @@ def reports_generator(
             cache_key=cache_key,
             download=download,
             max_runtime=max_runtime,
-            reports_path=reports_path,
             log_level=log_level,
         )
         for client, request in zip(itertools.cycle(clients), requests)

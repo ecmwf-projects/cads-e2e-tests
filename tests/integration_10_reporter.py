@@ -1,14 +1,13 @@
 import datetime
 import re
 import uuid
-from pathlib import Path
 from typing import Any
 
 import pytest
 
 from cads_e2e_tests import reports_generator
 from cads_e2e_tests.client import TestClient
-from cads_e2e_tests.models import Checks, Report, Request, load_reports
+from cads_e2e_tests.models import Checks, Report, Request
 
 
 @pytest.fixture
@@ -86,21 +85,6 @@ def test_client_cache(
     )
     actual_parameters = set(report.request.parameters)
     assert actual_parameters == expected_parameters
-
-
-def test_client_write_reports(
-    url: str, keys: list[str], dummy_request: Request, tmp_path: Path
-) -> None:
-    report_path = tmp_path / "report.json"
-    expected_report = make_reports(
-        url=url,
-        keys=keys,
-        requests=[dummy_request],
-        reports_path=report_path,
-        cache_key=None,
-    )
-    actual_report = load_reports(report_path.open())
-    assert expected_report == actual_report
 
 
 @pytest.mark.parametrize(

@@ -37,7 +37,7 @@ def test_cli_make_report_from_yaml(
 ) -> None:
     requests_path = tmp_path / "requests.yaml"
     requests_path.write_text(REQUESTS_YAML)
-    report_path = tmp_path / "report.json"
+    report_path = tmp_path / "report.jsonl"
 
     make_reports(
         key=keys,
