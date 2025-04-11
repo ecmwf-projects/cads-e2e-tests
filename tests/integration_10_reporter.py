@@ -1,13 +1,12 @@
 import datetime
 import re
 import uuid
-from pathlib import Path
 
 import pytest
 
-from cads_e2e_tests import make_reports
+from cads_e2e_tests import reports_generator
 from cads_e2e_tests.client import TestClient
-from cads_e2e_tests.models import Checks, Report, Request, load_reports
+from cads_e2e_tests.models import Checks, Report, Request
 
 
 @pytest.fixture
@@ -22,8 +21,14 @@ def dummy_request() -> Request:
 def test_client_make_reports(
     url: str, keys: list[str], dummy_request: Request, download: bool
 ) -> None:
-    (actual_report,) = make_reports(
-        url=url, keys=keys, requests=[dummy_request], cache_key=None, download=download
+    (actual_report,) = list(
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=[dummy_request],
+            cache_key=None,
+            download=download,
+        )
     )
 
     started_at = actual_report.started_at
@@ -73,29 +78,16 @@ def test_client_cache(
     cache_key: str | None,
     expected_parameters: set[str],
 ) -> None:
-    (report,) = make_reports(
-        url=url,
-        keys=keys,
-        requests=[dummy_request],
-        cache_key=cache_key,
+    (report,) = list(
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=[dummy_request],
+            cache_key=cache_key,
+        )
     )
     actual_parameters = set(report.request.parameters)
     assert actual_parameters == expected_parameters
-
-
-def test_client_write_reports(
-    url: str, keys: list[str], dummy_request: Request, tmp_path: Path
-) -> None:
-    report_path = tmp_path / "report.json"
-    expected_report = make_reports(
-        url=url,
-        keys=keys,
-        requests=[dummy_request],
-        reports_path=report_path,
-        cache_key=None,
-    )
-    actual_report = load_reports(report_path.open())
-    assert expected_report == actual_report
 
 
 @pytest.mark.parametrize(
@@ -141,8 +133,10 @@ def test_client_checks(
         checks=checks, **dummy_request.model_dump(exclude={"checks"})
     )
 
-    (report,) = make_reports(
-        url=url, keys=keys, requests=[request_with_checks], cache_key=None
+    (report,) = list(
+        reports_generator(
+            url=url, keys=keys, requests=[request_with_checks], cache_key=None
+        )
     )
     assert report.request.checks == checks
 
@@ -154,14 +148,18 @@ def test_client_checks(
 
 def test_client_random_request(url: str, keys: list[str]) -> None:
     request = Request(collection_id="test-adaptor-url")
-    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
+    )
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
 
 def test_client_random_request_widgets(url: str, keys: list[str]) -> None:
     request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
-    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
+    )
     parameters = report.request.parameters
 
     assert set(parameters) == {
@@ -198,7 +196,9 @@ def test_client_no_requests(
     monkeypatch: pytest.MonkeyPatch, url: str, keys: list[str]
 ) -> None:
     monkeypatch.setattr(TestClient, "collection_ids", ["test-adaptor-url"])
-    (report,) = make_reports(url=url, keys=keys, requests=None, cache_key=None)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=None, cache_key=None)
+    )
     assert len(report.request.parameters) > 1
     assert not report.tracebacks
 
@@ -207,15 +207,23 @@ def test_client_regex_pattern(
     url: str, keys: list[str], dummy_request: Request
 ) -> None:
     requests = [dummy_request, Request(collection_id="foo")]
-    (report,) = make_reports(
-        url=url, keys=keys, requests=requests, cache_key=None, regex_pattern="test-*"
+    (report,) = list(
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=requests,
+            cache_key=None,
+            regex_pattern="test-*",
+        )
     )
     assert report.request.collection_id == "test-adaptor-dummy"
 
 
 def test_client_unreachable_collection(url: str, keys: list[str]) -> None:
     request = Request(collection_id="foo")
-    (report,) = make_reports(url=url, keys=keys, requests=[request], cache_key=None)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
+    )
     (traceback,) = report.tracebacks
     assert "404 Client Error" in traceback
 
@@ -224,17 +232,23 @@ def test_client_unreachable_collection(url: str, keys: list[str]) -> None:
 def test_n_repeats(
     url: str, keys: list[str], dummy_request: Request, n_repeats: int
 ) -> None:
-    reports = make_reports(
-        url=url, keys=keys, requests=[dummy_request], n_repeats=n_repeats
+    reports = list(
+        reports_generator(
+            url=url, keys=keys, requests=[dummy_request], n_repeats=n_repeats
+        )
     )
     assert len(reports) == n_repeats
 
 
 def test_max_runtime(url: str, keys: list[str], dummy_request: Request) -> None:
     requests = [dummy_request]
-    (report,) = make_reports(url=url, keys=keys, requests=requests, max_runtime=10)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=requests, max_runtime=10)
+    )
     assert not report.tracebacks
 
-    (report,) = make_reports(url=url, keys=keys, requests=requests, max_runtime=0)
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=requests, max_runtime=0)
+    )
     (traceback,) = report.tracebacks
     assert traceback.endswith("TimeoutError: Maximum runtime exceeded.\n")

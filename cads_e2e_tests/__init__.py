@@ -25,20 +25,19 @@ except ImportError:  # pragma: no cover
 from .models import (
     Report,
     Request,
-    dump_reports,
+    dump_report,
     dump_requests,
     load_reports,
     load_requests,
 )
-from .reporter import make_reports, reports_generator
+from .reporter import reports_generator
 
 __all__ = [
     "__version__",
-    "make_reports",
     "reports_generator",
     "Report",
     "Request",
-    "dump_reports",
+    "dump_report",
     "dump_requests",
     "load_reports",
     "load_requests",

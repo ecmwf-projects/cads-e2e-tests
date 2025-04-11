@@ -1,12 +1,10 @@
 import itertools
-import os
 import re
-from pathlib import Path
 from typing import Any, Iterator, Sequence
 
 import joblib
 
-from . import models, utils
+from . import utils
 from .client import TestClient
 from .models import Checks, Report, Request
 
@@ -26,17 +24,17 @@ def _switch_off_download_checks(request: Request) -> Request:
 def reports_generator(
     url: str | None,
     keys: list[str],
-    requests: Sequence[Request] | None,
-    cache_key: str | None,
-    n_jobs: int,
-    verbose: int,
-    regex_pattern: str,
-    download: bool,
-    n_repeats: int,
-    cyclic: bool,
-    randomise: bool,
-    max_runtime: float | None,
-    log_level: str | None,
+    requests: Sequence[Request] | None = None,
+    cache_key: str | None = None,
+    n_jobs: int = 1,
+    verbose: int = 0,
+    regex_pattern: str = "",
+    download: bool = True,
+    n_repeats: int = 1,
+    cyclic: bool = True,
+    randomise: bool = False,
+    max_runtime: float | None = None,
+    log_level: str | None = None,
     **kwargs: Any,
 ) -> Iterator[Report]:
     clients = [
@@ -80,49 +78,4 @@ def reports_generator(
         )
         for client, request in zip(itertools.cycle(clients), requests)
     )
-    return reports
-
-
-def make_reports(
-    url: str | None,
-    keys: list[str],
-    requests: Sequence[Request] | None = None,
-    reports_path: str | Path | None = None,
-    cache_key: str | None = None,
-    n_jobs: int = 1,
-    verbose: int = 0,
-    regex_pattern: str = "",
-    download: bool = True,
-    n_repeats: int = 1,
-    cyclic: bool = True,
-    randomise: bool = False,
-    max_runtime: float | None = None,
-    log_level: str | None = None,
-    **kwargs: Any,
-) -> list[Report]:
-    if reports_path and os.path.exists(reports_path):
-        raise FileExistsError(reports_path)
-
-    reports = []
-    for report in reports_generator(
-        url=url,
-        keys=keys,
-        requests=requests,
-        cache_key=cache_key,
-        n_jobs=n_jobs,
-        verbose=verbose,
-        regex_pattern=regex_pattern,
-        download=download,
-        n_repeats=n_repeats,
-        cyclic=cyclic,
-        randomise=randomise,
-        max_runtime=max_runtime,
-        log_level=log_level,
-        **kwargs,
-    ):
-        reports.append(report)
-        if reports_path:
-            with open(reports_path, "w") as fp:
-                models.dump_reports(reports, fp)
-
     return reports

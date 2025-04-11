@@ -35,8 +35,8 @@ def make_reports(
         ),
     ] = None,
     reports_path: Annotated[
-        str, Option(help="Path to write the reports in JSON format")
-    ] = "reports.json",
+        str, Option(help="Path to write the reports in JSON Lines format")
+    ] = "reports.jsonl",
     invalidate_cache: Annotated[
         bool,
         Option(help="Whether to invalidate the cache"),
@@ -97,11 +97,11 @@ def make_reports(
     else:
         requests = None
 
-    reports = reporter.make_reports(
+    reports = []
+    for report in reporter.reports_generator(
         url=url,
         keys=key,
         requests=requests,
-        reports_path=reports_path,
         cache_key=cache_key if invalidate_cache else None,
         n_jobs=n_jobs,
         verbose=verbose,
@@ -113,5 +113,10 @@ def make_reports(
         max_runtime=max_runtime,
         log_level=log_level,
         maximum_tries=datapi_maximum_tries,
-    )
+    ):
+        reports.append(report)
+
+        with open(reports_path, "a") as fp:
+            models.dump_report(report, fp)
+
     echo_passed_vs_failed(reports)

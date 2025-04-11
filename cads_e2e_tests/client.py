@@ -213,6 +213,7 @@ class TestClient(ApiClient):
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
+
         with utils.tmp_working_dir():
             return self.make_report(
                 request=request,
