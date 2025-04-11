@@ -2,10 +2,11 @@ import datetime
 import re
 import uuid
 from pathlib import Path
+from typing import Any
 
 import pytest
 
-from cads_e2e_tests import make_reports
+from cads_e2e_tests import reports_generator
 from cads_e2e_tests.client import TestClient
 from cads_e2e_tests.models import Checks, Report, Request, load_reports
 
@@ -16,6 +17,10 @@ def dummy_request() -> Request:
         collection_id="test-adaptor-dummy",
         parameters={"size": 0},
     )
+
+
+def make_reports(**kwargs: Any) -> list[Report]:
+    return list(reports_generator(**kwargs))
 
 
 @pytest.mark.parametrize("download", [True, False])

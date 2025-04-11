@@ -3,6 +3,7 @@ import functools
 import logging
 import random
 import time
+from pathlib import Path
 from typing import Any
 
 import attrs
@@ -10,7 +11,7 @@ import joblib
 from datapi import ApiClient, Remote
 from datapi.catalogue import Collections
 
-from . import utils
+from . import models, utils
 from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
@@ -155,6 +156,7 @@ class TestClient(ApiClient):
         cache_key: str | None,
         download: bool,
         max_runtime: float | None,
+        reports_path: str | Path | None,
     ) -> Report:
         report = Report(request=request)
 
@@ -197,10 +199,16 @@ class TestClient(ApiClient):
         if not tracebacks:
             tracebacks = report.run_checks()
 
-        return Report(
+        report = Report(
             tracebacks=tracebacks,
             **report.model_dump(exclude={"tracebacks", "finished_at"}),
         )
+
+        if reports_path is not None:
+            with open(reports_path, "a") as fp:
+                models.dump_report(report, fp)
+
+        return report
 
     @joblib.delayed  # type: ignore[misc]
     def delayed_make_report(
@@ -209,14 +217,17 @@ class TestClient(ApiClient):
         cache_key: str | None,
         download: bool,
         max_runtime: float | None,
+        reports_path: str | Path | None,
         log_level: str | None,
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
+
         with utils.tmp_working_dir():
             return self.make_report(
                 request=request,
                 cache_key=cache_key,
                 download=download,
                 max_runtime=max_runtime,
+                reports_path=reports_path,
             )

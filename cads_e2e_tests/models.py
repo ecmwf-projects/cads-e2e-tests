@@ -106,18 +106,19 @@ class Report(BaseModel):
 
 
 def load_reports(fp: TextIO | BinaryIO) -> list[Report]:
-    return [Report(**report) for report in json.load(fp)]
+    return [Report(**json.loads(line.strip())) for line in fp]
 
 
-def dump_reports(reports: list[Report], fp: TextIO) -> None:
+def dump_report(report: Report, fp: TextIO) -> None:
     try:
         import pydantic_core
     except ImportError:
         from pydantic.json import pydantic_encoder
 
-        json.dump(reports, fp, default=pydantic_encoder)
+        json.dump(report, fp, default=pydantic_encoder)
     else:
-        json.dump(pydantic_core.to_jsonable_python(reports), fp)
+        json.dump(pydantic_core.to_jsonable_python(report), fp)
+    fp.write("\n")
 
 
 def load_requests(fp: TextIO | BinaryIO) -> list[Request]:

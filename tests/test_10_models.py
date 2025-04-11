@@ -47,12 +47,12 @@ def test_report_run_checks(report: Report) -> None:
 
 
 def test_dump_and_load_reports(report: Report, tmp_path: Path) -> None:
-    expected_reports = [report]
     report_path = tmp_path / "report.json"
-    models.dump_reports(reports=expected_reports, fp=report_path.open("w"))
+    with report_path.open("a") as fp:
+        models.dump_report(report, fp)
+        models.dump_report(report, fp)
 
-    actual_reports = models.load_reports(report_path.open())
-    assert actual_reports == expected_reports
+    assert models.load_reports(report_path.open()) == [report, report]
 
 
 def test_dump_and_load_requests(report: Report, tmp_path: Path) -> None:
