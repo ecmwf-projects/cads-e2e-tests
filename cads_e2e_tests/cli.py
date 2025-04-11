@@ -102,7 +102,6 @@ def make_reports(
         url=url,
         keys=key,
         requests=requests,
-        reports_path=reports_path,
         cache_key=cache_key if invalidate_cache else None,
         n_jobs=n_jobs,
         verbose=verbose,
