@@ -96,8 +96,7 @@ def reorder(
 
 
 def random_choice_from_range(min: float, max: float, step: float = 1.0) -> float:
-    assert step > 0 and max > min
-    return min + random.randint(0, int((max - min) / step)) * step
+    return round(random.uniform(min, max) / step) * step
 
 
 def widget_random_selection(
