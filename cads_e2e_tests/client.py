@@ -7,8 +7,7 @@ from typing import Any
 
 import attrs
 import joblib
-from datapi import ApiClient, Remote
-from datapi.catalogue import Collections
+from ecmwf.datastores import Client, Collections, Remote
 
 from . import utils
 from .models import Report, Request
@@ -39,7 +38,7 @@ def _ensure_list(value: Any) -> list[Any]:
 
 
 @attrs.define
-class TestClient(ApiClient):
+class TestClient(Client):
     __test__ = False
 
     @functools.cached_property
