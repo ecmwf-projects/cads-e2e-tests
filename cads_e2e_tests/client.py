@@ -124,10 +124,9 @@ class TestClient(Client):
     ) -> Request:
         parameters = dict(request.parameters)
 
-        if request.settings.randomise is None:
-            randomise = True if not parameters else False
-        else:
-            randomise = request.settings.randomise
+        randomise = request.settings.randomise
+        if randomise is None:
+            randomise = not parameters
 
         if randomise:
             parameters = self.random_parameters(request.collection_id, parameters)

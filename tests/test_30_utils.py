@@ -2,6 +2,7 @@ import contextlib
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -70,3 +71,18 @@ def test_reorder(cyclic: bool, randomise: bool, expected: set[list[int]]) -> Non
 def test_random_choiche_from_range() -> None:
     for _ in range(100):
         assert utils.random_choice_from_range(0, 0.2, 0.1) in [0, 0.1, 0.2]
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        ("foo", ["foo"]),
+        (("foo"), ["foo"]),
+        ({"foo"}, ["foo"]),
+        (["foo"], ["foo"]),
+        (None, []),
+        (range(2), [0, 1]),
+    ],
+)
+def test_ensure_list(value: Any, expected: list[Any]) -> None:
+    assert utils.ensure_list(value) == expected
