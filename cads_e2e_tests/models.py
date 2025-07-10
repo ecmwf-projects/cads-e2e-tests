@@ -55,7 +55,7 @@ class Checks(BaseModel):
 
 class Settings(BaseModel):
     max_runtime: float | None = None
-    add_random_parameters: bool | None = None
+    randomise: bool | None = None
 
 
 class Request(BaseModel):

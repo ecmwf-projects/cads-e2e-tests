@@ -155,24 +155,25 @@ def test_client_random_request(url: str, keys: list[str]) -> None:
     assert not report.tracebacks
 
 
-@pytest.mark.parametrize("add_random_parameters", [True, False])
+@pytest.mark.parametrize("randomise", [True, False])
 def test_client_partial_random_request(
-    url: str, keys: list[str], add_random_parameters: bool
+    url: str, keys: list[str], randomise: bool
 ) -> None:
     request = Request(
         collection_id="test-adaptor-url",
-        parameters={"month": ["01", "02"]},
-        settings=Settings(add_random_parameters=add_random_parameters),
+        parameters={"month": ["01", "02"], "year": "1979"},
+        settings=Settings(randomise=randomise),
     )
     (report,) = list(
         reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
     )
-    assert report.request.parameters["month"] == ["01", "02"]
-    if add_random_parameters:
-        assert len(report.request.parameters) > 1
+    if randomise:
+        assert report.request.parameters["month"] in (["01"], ["02"])
+        assert report.request.parameters["year"] == ["1979"]
+        assert len(report.request.parameters) > 2
         assert not report.tracebacks
     else:
-        assert len(report.request.parameters) == 1
+        assert report.request.parameters == {"month": ["01", "02"], "year": "1979"}
         assert report.tracebacks
 
 
