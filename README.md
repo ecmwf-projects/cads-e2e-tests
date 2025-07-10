@@ -21,7 +21,7 @@ cads-e2e-tests --reports-path random_reports.jsonl
 ```yaml
 # requests.yaml
 
-# Example 1: Document all checks and settings
+# Example 1: Document all available checks and settings
 - collection_id: reanalysis-era5-single-levels
   parameters:
     # optional parameters (random request if no parameters are provided)
@@ -53,7 +53,7 @@ cads-e2e-tests --reports-path random_reports.jsonl
 # Example 3: Partial random request
 - collection_id: reanalysis-era5-single-levels
   parameters:
-    year: ["1990", "1991"]  # pick either 1990 or 1991
+    year: ["1990", "1991"]  # Pick either 1990 or 1991
   settings:
     randomise: true
 ```
