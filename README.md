@@ -41,7 +41,7 @@ cads-e2e-tests --reports-path random_reports.jsonl
   settings:
     # optional request-specific settings
     max_runtime: 60.0  # Maximum time (in seconds) the request is allowed to run
-    add_random_parameters: False  # Add missing parameters randomly. By default, only empty requests are filled
+    add_random_parameters: false  # Add missing parameters randomly. By default, only empty requests are filled
 
 # Example 2:
 - collection_id: test-adaptor-dummy
