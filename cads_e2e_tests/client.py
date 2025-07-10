@@ -68,18 +68,27 @@ class TestClient(Client):
             is None
         ]
 
-    def random_parameters(self, collection_id: str) -> dict[str, Any]:
+    def random_parameters(
+        self, collection_id: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
         forms = {
             name: form for form in collection.form if (name := form.pop("name", None))
         }
 
+        # Initialise parameters
+        fixed_keys = set(parameters)
+        parameters = parameters | {
+            k: v
+            for k, v in collection.apply_constraints(parameters).items()
+            if k not in fixed_keys
+        }
+
         # Random selection based on constraints
-        parameters = collection.apply_constraints({})
         names = list(parameters)
         random.shuffle(names)
         for name in names:
-            if value := parameters[name]:
+            if name not in fixed_keys and (value := parameters[name]):
                 parameters[name] = random.choice(value)
             for k, v in collection.apply_constraints(parameters).items():
                 if names.index(k) > names.index(name) or v == []:
@@ -122,8 +131,14 @@ class TestClient(Client):
         cache_key: str | None,
     ) -> Request:
         parameters = dict(request.parameters)
-        if not parameters:
-            parameters = self.random_parameters(request.collection_id)
+
+        if request.settings.add_random_parameters is None:
+            add_random_parameters = True if not parameters else False
+        else:
+            add_random_parameters = request.settings.add_random_parameters
+
+        if add_random_parameters:
+            parameters = self.random_parameters(request.collection_id, parameters)
         if cache_key is not None:
             parameters.setdefault(cache_key, datetime.datetime.now().isoformat())
         return Request(
