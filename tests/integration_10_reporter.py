@@ -6,7 +6,7 @@ import pytest
 
 from cads_e2e_tests import reports_generator
 from cads_e2e_tests.client import TestClient
-from cads_e2e_tests.models import Checks, Report, Request
+from cads_e2e_tests.models import Checks, Report, Request, Settings
 
 
 @pytest.fixture
@@ -240,15 +240,32 @@ def test_n_repeats(
     assert len(reports) == n_repeats
 
 
-def test_max_runtime(url: str, keys: list[str], dummy_request: Request) -> None:
+@pytest.mark.parametrize("use_settings", [True, False])
+def test_max_runtime(
+    url: str, keys: list[str], dummy_request: Request, use_settings: bool
+) -> None:
+    if use_settings:
+        dummy_request.settings = Settings(max_runtime=10)
     requests = [dummy_request]
     (report,) = list(
-        reports_generator(url=url, keys=keys, requests=requests, max_runtime=10)
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=requests,
+            max_runtime=None if use_settings else 10,
+        )
     )
     assert not report.tracebacks
 
+    if use_settings:
+        dummy_request.settings = Settings(max_runtime=0)
     (report,) = list(
-        reports_generator(url=url, keys=keys, requests=requests, max_runtime=0)
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=requests,
+            max_runtime=None if use_settings else 0,
+        )
     )
     (traceback,) = report.tracebacks
     assert traceback.endswith("TimeoutError: Maximum runtime exceeded.\n")

@@ -5,7 +5,7 @@ from pytest import CaptureFixture
 
 from cads_e2e_tests import models
 from cads_e2e_tests.cli import make_reports
-from cads_e2e_tests.models import Checks, Report, Request
+from cads_e2e_tests.models import Checks, Report, Request, Settings
 
 REQUESTS_YAML = """# requests.yaml
 - collection_id: test-adaptor-dummy
@@ -18,6 +18,8 @@ REQUESTS_YAML = """# requests.yaml
     checksum: d41d8cd98f00b204e9800998ecf8427e
     content_length: 0
     content_type: application/x-grib
+  settings:
+    max_runtime: 60.0
 """
 
 
@@ -65,6 +67,7 @@ def test_cli_make_report_from_yaml(
                 content_length=0,
                 content_type="application/x-grib",
             ),
+            settings=Settings(max_runtime=60.0),
         ),
         started_at=actual_report.started_at,
         finished_at=actual_report.finished_at,

@@ -53,10 +53,15 @@ class Checks(BaseModel):
             raise exceptions.ContentTypeError(actual=actual, expected=expected)
 
 
+class Settings(BaseModel):
+    max_runtime: float | None = None
+
+
 class Request(BaseModel):
     collection_id: str
     parameters: dict[str, Any] = {}
     checks: Checks = Checks()
+    settings: Settings = Settings()
 
 
 class Report(BaseModel):

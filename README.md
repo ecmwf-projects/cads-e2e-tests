@@ -38,6 +38,9 @@ cads-e2e-tests --reports-path random_reports.jsonl
     time: 60  # maximum running time to generate results in seconds
     content_length: 2076588  # file size in Bytes inferred from metadata
     content_type: application/x-grib  # file type inferred from metadata
+  settings:
+    # optional request-specific settings
+    max_runtime: 60.0  # Maximum time (in seconds) the request is allowed to run
 
 # Example 2:
 - collection_id: test-adaptor-dummy
