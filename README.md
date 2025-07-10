@@ -41,7 +41,7 @@ cads-e2e-tests --reports-path random_reports.jsonl
   settings:
     # optional request-specific settings
     max_runtime: 60.0  # Maximum time (in seconds) the request is allowed to run
-    randomise: false  # Randomise the request by selecting one value per parameter. By default, only requests with no parameters are randomised.
+    randomise: false  # Pick one random value per parameter after intersecting the constraints. By default, only empty requests are randomised.
 
 # Example 2:
 - collection_id: test-adaptor-dummy
