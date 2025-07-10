@@ -186,7 +186,10 @@ class TestClient(Client):
                 time.sleep(1)
                 waited += 1
             
-            elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
+            try:
+                elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
+            except TypeError:
+                elapsed_time = -1
 
             report = Report(
                 time=elapsed_time,
