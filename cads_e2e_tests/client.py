@@ -178,7 +178,14 @@ class TestClient(Client):
             results = remote.get_results()
 
             time.sleep(1)  # Make sure start/end datetimes are updated
-            assert remote.started_at is not None and remote.finished_at is not None
+            MAX_WAIT_FOR_UPDATES = 60
+            waited = 0
+            while remote.started_at is None or remote.finished_at is None:
+                if waited > MAX_WAIT_FOR_UPDATES:
+                    raise TimeoutError("Remote did not start or finish in time.")
+                time.sleep(1)
+                waited += 1
+            
             elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
 
             report = Report(
