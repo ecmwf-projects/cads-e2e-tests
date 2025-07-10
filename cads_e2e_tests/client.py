@@ -27,16 +27,6 @@ def _licences_to_set_of_tuples(
     return {(licence["id"], licence["revision"]) for licence in licences}
 
 
-def _ensure_list(value: Any) -> list[Any]:
-    if isinstance(value, list):
-        return value
-    if value is None:
-        return []
-    if isinstance(value, tuple | set | range):
-        return list(value)
-    return [value]
-
-
 @attrs.define
 class TestClient(Client):
     __test__ = False
@@ -68,21 +58,30 @@ class TestClient(Client):
             is None
         ]
 
-    def random_parameters(self, collection_id: str) -> dict[str, Any]:
+    def random_parameters(
+        self, collection_id: str, parameters: dict[str, Any]
+    ) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
         forms = {
             name: form for form in collection.form if (name := form.pop("name", None))
         }
 
+        # Initialise parameters
+        original_keys = list(parameters)
+        parameters = {k: utils.ensure_list(v) for k, v in parameters.items()}
+        parameters = collection.apply_constraints(parameters) | parameters
+        added_keys = list(set(parameters) - set(original_keys))
+        random.shuffle(added_keys)
+
         # Random selection based on constraints
-        parameters = collection.apply_constraints({})
-        names = list(parameters)
-        random.shuffle(names)
+        names = original_keys + added_keys
         for name in names:
             if value := parameters[name]:
                 parameters[name] = random.choice(value)
             for k, v in collection.apply_constraints(parameters).items():
                 if names.index(k) > names.index(name) or v == []:
+                    if k in original_keys:
+                        v = list(set(v) & set(parameters[k]))
                     parameters[k] = v
 
         # Choose widgets to process
@@ -111,9 +110,11 @@ class TestClient(Client):
             )
 
         return {
-            name: _ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
+            name: utils.ensure_list(value)
+            if widget.get("type") in LIST_WIDGETS
+            else value
             for name, widget in forms.items()
-            if _ensure_list(value := parameters.get(name))
+            if utils.ensure_list(value := parameters.get(name))
         }
 
     def update_request_parameters(
@@ -122,10 +123,17 @@ class TestClient(Client):
         cache_key: str | None,
     ) -> Request:
         parameters = dict(request.parameters)
-        if not parameters:
-            parameters = self.random_parameters(request.collection_id)
+
+        randomise = request.settings.randomise
+        if randomise is None:
+            randomise = not parameters
+
+        if randomise:
+            parameters = self.random_parameters(request.collection_id, parameters)
+
         if cache_key is not None:
             parameters.setdefault(cache_key, datetime.datetime.now().isoformat())
+
         return Request(
             parameters=parameters,
             **request.model_dump(exclude={"parameters"}),

@@ -155,6 +155,28 @@ def test_client_random_request(url: str, keys: list[str]) -> None:
     assert not report.tracebacks
 
 
+@pytest.mark.parametrize("randomise", [True, False])
+def test_client_partial_random_request(
+    url: str, keys: list[str], randomise: bool
+) -> None:
+    request = Request(
+        collection_id="test-adaptor-url",
+        parameters={"month": ["01", "02"], "year": "1979"},
+        settings=Settings(randomise=randomise),
+    )
+    (report,) = list(
+        reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
+    )
+    if randomise:
+        assert report.request.parameters["month"] in (["01"], ["02"])
+        assert report.request.parameters["year"] == ["1979"]
+        assert len(report.request.parameters) > 2
+        assert not report.tracebacks
+    else:
+        assert report.request.parameters == {"month": ["01", "02"], "year": "1979"}
+        assert report.tracebacks
+
+
 def test_client_random_request_widgets(url: str, keys: list[str]) -> None:
     request = Request(collection_id="test-layout-sandbox-nogecko-dataset")
     (report,) = list(
