@@ -21,7 +21,7 @@ cads-e2e-tests --reports-path random_reports.jsonl
 ```yaml
 # requests.yaml
 
-# Example 1: pass
+# Example 1: Document all checks and settings
 - collection_id: reanalysis-era5-single-levels
   parameters:
     # optional parameters (random request if no parameters are provided)
@@ -43,17 +43,17 @@ cads-e2e-tests --reports-path random_reports.jsonl
     max_runtime: 60.0  # Maximum time (in seconds) the request is allowed to run
     randomise: false  # Pick one random value per parameter after intersecting the constraints. By default, only empty requests are randomised.
 
-# Example 2: fail
+# Example 2: Failure
 - collection_id: test-adaptor-dummy
   parameters:
     size: 0
   checks:
     size: 1  # wrong file size
 
-# Example 3: partial request
+# Example 3: Partial random request
 - collection_id: reanalysis-era5-single-levels
   parameters:
-    year: ["1990", "1991"]
+    year: ["1990", "1991"]  # pick either 1990 or 1991
   settings:
     randomise: true
 ```
