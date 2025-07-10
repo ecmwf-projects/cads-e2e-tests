@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from cads_e2e_tests import models
-from cads_e2e_tests.models import Checks, Report, Request
+from cads_e2e_tests.models import Checks, Report, Request, Settings
 
 
 @pytest.fixture
@@ -19,6 +19,7 @@ def report() -> Report:
                 content_length=10,
                 content_type="foo-type",
             ),
+            settings=Settings(max_runtime=60),
         ),
         checksum="bar",
         extension=".bar",

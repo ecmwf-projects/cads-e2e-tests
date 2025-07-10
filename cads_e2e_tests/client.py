@@ -155,6 +155,9 @@ class TestClient(Client):
         download: bool,
         max_runtime: float | None,
     ) -> Report:
+        if request.settings.max_runtime is not None:
+            max_runtime = request.settings.max_runtime
+
         report = Report(request=request)
 
         tracebacks: list[str] = []
