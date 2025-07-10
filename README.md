@@ -24,24 +24,24 @@ cads-e2e-tests --reports-path random_reports.jsonl
 # Example 1: Document all available checks and settings
 - collection_id: reanalysis-era5-single-levels
   parameters:
-    # optional parameters (random request if no parameters are provided)
+    # Optional parameters (random request if no parameters are provided)
     variable: "2t"
     product_type: "reanalysis"
     date: "2012-12-01"
     time: "12:00"
   checks:
-    # optional checks (remove any check to disable)
+    # Optional checks (remove any check to disable)
     checksum: 01683b3d69dec4c7221e524e3f6697dd  # file md5 hash
     extension: .grib  # file extension
     size: 2076588  # file size in Bytes
-    # checks that do not require downloading the results
+    # Checks that do not require downloading the results
     time: 60  # maximum running time to generate results in seconds
     content_length: 2076588  # file size in Bytes inferred from metadata
     content_type: application/x-grib  # file type inferred from metadata
   settings:
-    # optional request-specific settings
-    max_runtime: 60.0  # Maximum time (in seconds) the request is allowed to run
-    randomise: false  # Pick one random value per parameter after intersecting the constraints. By default, only empty requests are randomised.
+    # Optional request-specific settings
+    max_runtime: 60.0  # maximum time (in seconds) the request is allowed to run
+    randomise: false  # pick one random value per parameter after intersecting the constraints (by default, only empty requests are randomised)
 
 # Example 2: Failure
 - collection_id: test-adaptor-dummy
@@ -53,9 +53,9 @@ cads-e2e-tests --reports-path random_reports.jsonl
 # Example 3: Partial random request
 - collection_id: reanalysis-era5-single-levels
   parameters:
-    year: ["1990", "1991"]  # Pick either 1990 or 1991
+    year: ["1990", "1991"]
   settings:
-    randomise: true
+    randomise: true  # random request for 1990 or 1991
 ```
 
 ```
