@@ -140,3 +140,13 @@ def widget_random_selection(
             return random.choice(values)
         case _:
             raise NotImplementedError(f"{widget_type=}")
+
+
+def ensure_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if value is None:
+        return []
+    if isinstance(value, tuple | set | range):
+        return list(value)
+    return [value]
