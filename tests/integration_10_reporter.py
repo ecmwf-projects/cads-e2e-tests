@@ -291,3 +291,18 @@ def test_max_runtime(
     )
     (traceback,) = report.tracebacks
     assert traceback.endswith("TimeoutError: Maximum runtime exceeded.\n")
+
+
+def test_client_requests_pool(
+    monkeypatch: pytest.MonkeyPatch,
+    url: str,
+    keys: list[str],
+    dummy_request: Request,
+) -> None:
+    monkeypatch.setattr(TestClient, "collection_ids", ["test-adaptor-dummy"])
+    (report,) = list(
+        reports_generator(
+            url=url, keys=keys, requests=None, requests_pool=[dummy_request]
+        )
+    )
+    assert report.request == dummy_request
