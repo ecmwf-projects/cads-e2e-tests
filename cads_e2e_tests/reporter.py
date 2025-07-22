@@ -1,4 +1,6 @@
+import collections
 import itertools
+import random
 import re
 from typing import Any, Iterator, Sequence
 
@@ -35,6 +37,7 @@ def reports_generator(
     randomise: bool = False,
     max_runtime: float | None = None,
     log_level: str | None = None,
+    requests_pool: Sequence[Request | dict[str, Any]] | None = None,
     **kwargs: Any,
 ) -> Iterator[Report]:
     clients = [
@@ -44,8 +47,16 @@ def reports_generator(
         client.accept_all_missing_licences()
 
     if requests is None:
+        requests_pool_defaultdict = collections.defaultdict(list)
+        for request in requests_pool or []:
+            if not isinstance(request, Request):
+                request = Request(**request)
+            requests_pool_defaultdict[request.collection_id].append(request)
         requests = [
-            Request(collection_id=collection_id)
+            random.choice(
+                requests_pool_defaultdict[collection_id]
+                or [Request(collection_id=collection_id)]
+            )
             for collection_id in clients[0].collection_ids
         ]
 
