@@ -40,6 +40,9 @@ def reports_generator(
     requests_pool: Sequence[Request | dict[str, Any]] | None = None,
     **kwargs: Any,
 ) -> Iterator[Report]:
+    if requests and requests_pool:
+        raise ValueError("requests and requests_pool are mutually exclusive.")
+
     clients = [
         TestClient(url=url, key=key, **kwargs) for key in ([None] if not keys else keys)
     ]
