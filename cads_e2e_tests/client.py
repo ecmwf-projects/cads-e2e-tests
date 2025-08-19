@@ -148,16 +148,26 @@ class TestClient(Client):
         self, remote: Remote, max_runtime: float | None
     ) -> None:
         sleep = 1.0
-        while not remote.results_ready:
-            if (
-                max_runtime is not None
-                and (started_at := remote.started_at) is not None
-            ):
-                if started_at.tzinfo is None:
-                    started_at = started_at.replace(tzinfo=datetime.timezone.utc)
-                timedelta = datetime.datetime.now(datetime.timezone.utc) - started_at
-                if timedelta.total_seconds() > max_runtime:
-                    raise TimeoutError("Maximum runtime exceeded.")
+        max_tries_without_results = 10
+        tries_without_results = 0
+        while True:
+            try:
+                if not remote.results_ready:
+                    if (
+                        max_runtime is not None
+                        and (started_at := remote.started_at) is not None
+                    ):
+                        if started_at.tzinfo is None:
+                            started_at = started_at.replace(tzinfo=datetime.timezone.utc)
+                        timedelta = datetime.datetime.now(datetime.timezone.utc) - started_at
+                        if timedelta.total_seconds() > max_runtime:
+                            raise TimeoutError("Maximum runtime exceeded.")
+                else:
+                    return
+            except Exception as e:
+                tries_without_results += 1
+                if tries_without_results >= max_tries_without_results:
+                    raise TimeoutError("Maximum number of tries without results exceeded.")
             time.sleep(sleep)
             sleep = min(sleep * 1.5, self.sleep_max)
 
