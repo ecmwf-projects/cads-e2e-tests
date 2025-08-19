@@ -47,10 +47,15 @@ class TestClient(Client):
     @functools.cached_property
     def collection_ids(self) -> list[str]:
         collection_ids = []
-        collections: Collections | None = self.get_collections()
-        while collections is not None:
-            collection_ids.extend(collections.collection_ids)
-            collections = collections.next
+        try:
+            collections: Collections | None = self.get_collections()
+            while collections is not None:
+                collection_ids.extend(collections.collection_ids)
+                collections = collections.next
+        except Exception as e:
+            collection_ids = ["s2s", "s2s-forecasts", "s2s-reforecasts", "tigge", "tigge-forecasts"]
+            print(f"Using a hardcoded set of ECDS collection_ids: {collection_ids}.")
+
         return [
             collection_id
             for collection_id in collection_ids
