@@ -63,6 +63,9 @@ class TargetInfo:
     def size(self) -> int:
         return os.path.getsize(self.target)
 
+    @property
+    def inspect(self) -> int:
+        return os.system(f"$INSPECT_E2ETESTS_RESULT {self.target}")
 
 def random_date(start: str, end: str) -> str:
     start_date = datetime.date.fromisoformat(start)

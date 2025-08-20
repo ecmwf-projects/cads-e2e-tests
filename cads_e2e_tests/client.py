@@ -1,6 +1,7 @@
 import datetime
 import functools
 import logging
+import os
 import random
 import time
 from typing import Any
@@ -226,8 +227,10 @@ class TestClient(Client):
                     extension=target_info.extension,
                     size=target_info.size,
                     checksum=target_info.checksum,
-                    **report.model_dump(exclude={"extension", "size", "checksum"}),
+                    inspect=target_info.inspect,
+                    **report.model_dump(exclude={"extension", "size", "checksum", "inspect"}),
                 )
+                os.remove(target_info.target)
 
         if not tracebacks:
             tracebacks = report.run_checks()

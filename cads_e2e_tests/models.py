@@ -77,6 +77,7 @@ class Report(BaseModel):
     extension: str | None = None
     size: int | None = None
     time: float | None = None
+    inspect: int | None = None
 
     def catch_exceptions(self, tracebacks: list[str]) -> ContextManager[None]:
         return utils.catch_exceptions(
