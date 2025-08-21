@@ -4,7 +4,7 @@ WORKDIR /src/cads-e2e-tests
 
 COPY environment.yml /src/cads-e2e-tests/
 
-RUN conda install -c conda-forge gcc python=3.11 \
+RUN conda install -c conda-forge gcc python=3.12 \
     && conda env update -n base -f environment.yml
 
 COPY . /src/cads-e2e-tests
