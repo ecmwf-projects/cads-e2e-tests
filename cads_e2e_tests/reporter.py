@@ -38,6 +38,8 @@ def reports_generator(
     max_runtime: float | None = None,
     log_level: str | None = None,
     requests_pool: Sequence[Request | dict[str, Any]] | None = None,
+    max_replication_lag: float = 1.0,
+    get_elapsed_time: bool = True,
     **kwargs: Any,
 ) -> Iterator[Report]:
     if requests and requests_pool:
@@ -89,6 +91,8 @@ def reports_generator(
             download=download,
             max_runtime=max_runtime,
             log_level=log_level,
+            max_replication_lag=max_replication_lag,
+            get_elapsed_time=get_elapsed_time,
         )
         for client, request in zip(itertools.cycle(clients), requests)
     )

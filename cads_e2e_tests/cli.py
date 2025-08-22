@@ -89,6 +89,14 @@ def make_reports(
         int,
         Option(help="Maximum number of retries"),
     ] = 1,
+    max_replication_lag: Annotated[
+        float,
+        Option(help="Maximum allowed replication lag (in seconds)"),
+    ] = 1.0,
+    elapsed_time: Annotated[
+        bool,
+        Option(help="Whether to get the elapsed time of the request"),
+    ] = True,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -113,6 +121,8 @@ def make_reports(
         max_runtime=max_runtime,
         log_level=log_level,
         maximum_tries=client_maximum_tries,
+        max_replication_lag=max_replication_lag,
+        get_elapsed_time=elapsed_time,
     ):
         reports.append(report)
 
