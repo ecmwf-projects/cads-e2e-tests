@@ -33,9 +33,11 @@ def _get_elapsed_time(remote: Remote, max_replication_lag: float) -> float:
     assert max_replication_lag >= 0
     replication_lag = 0.0
     sleep = 1.0
-    while replication_lag <= max_replication_lag:
+    while True:
         if (started_at := remote.started_at) and (finished_at := remote.finished_at):
             return (finished_at - started_at).total_seconds()
+        if replication_lag >= max_replication_lag:
+            break
         sleep = min(sleep, max_replication_lag - replication_lag)
         time.sleep(sleep)
         replication_lag += sleep
