@@ -20,11 +20,27 @@ LIST_WIDGETS = [
     "StringListWidget",
 ]
 
+SLEEP_INCREMENTAL_RATIO = 1.5
+
 
 def _licences_to_set_of_tuples(
     licences: list[dict[str, Any]],
 ) -> set[tuple[str, int]]:
     return {(licence["id"], licence["revision"]) for licence in licences}
+
+
+def _get_elapsed_time(remote: Remote, max_replication_lag: float) -> float:
+    assert max_replication_lag >= 0
+    replication_lag = 0.0
+    sleep = 1.0
+    while replication_lag <= max_replication_lag:
+        if (started_at := remote.started_at) and (finished_at := remote.finished_at):
+            return (finished_at - started_at).total_seconds()
+        sleep = min(sleep, max_replication_lag - replication_lag)
+        time.sleep(sleep)
+        replication_lag += sleep
+        sleep *= SLEEP_INCREMENTAL_RATIO
+    raise TimeoutError("Maximum replication lag exceeded.")
 
 
 @attrs.define
@@ -154,7 +170,7 @@ class TestClient(Client):
                 if timedelta.total_seconds() > max_runtime:
                     raise TimeoutError("Maximum runtime exceeded.")
             time.sleep(sleep)
-            sleep = min(sleep * 1.5, self.sleep_max)
+            sleep = min(sleep * SLEEP_INCREMENTAL_RATIO, self.sleep_max)
 
     def make_report(
         self,
@@ -162,6 +178,8 @@ class TestClient(Client):
         cache_key: str | None,
         download: bool,
         max_runtime: float | None,
+        max_replication_lag: float,
+        get_elapsed_time: bool,
     ) -> Report:
         if request.settings.max_runtime is not None:
             max_runtime = request.settings.max_runtime
@@ -185,9 +203,11 @@ class TestClient(Client):
             self.wait_on_results_with_timeout(remote, max_runtime)
             results = remote.get_results()
 
-            time.sleep(1)  # Make sure start/end datetimes are updated
-            assert remote.started_at is not None and remote.finished_at is not None
-            elapsed_time = (remote.finished_at - remote.started_at).total_seconds()
+            elapsed_time = (
+                _get_elapsed_time(remote, max_replication_lag)
+                if get_elapsed_time
+                else None
+            )
 
             report = Report(
                 time=elapsed_time,
@@ -220,6 +240,8 @@ class TestClient(Client):
         download: bool,
         max_runtime: float | None,
         log_level: str | None,
+        max_replication_lag: float,
+        get_elapsed_time: bool,
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
@@ -230,4 +252,6 @@ class TestClient(Client):
                 cache_key=cache_key,
                 download=download,
                 max_runtime=max_runtime,
+                max_replication_lag=max_replication_lag,
+                get_elapsed_time=get_elapsed_time,
             )

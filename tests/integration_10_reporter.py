@@ -306,3 +306,18 @@ def test_client_requests_pool(
         )
     )
     assert report.request == dummy_request
+
+
+@pytest.mark.parametrize("get_elapsed_time", [True, False])
+def test_get_elapsed_time(
+    url: str, keys: list[str], dummy_request: Request, get_elapsed_time: bool
+) -> None:
+    (report,) = list(
+        reports_generator(
+            url=url,
+            keys=keys,
+            requests=[dummy_request],
+            get_elapsed_time=get_elapsed_time,
+        )
+    )
+    assert report.time if get_elapsed_time else report.time is None
