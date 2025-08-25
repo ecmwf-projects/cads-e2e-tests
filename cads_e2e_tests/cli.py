@@ -95,7 +95,7 @@ def make_reports(
     ] = 1.0,
     elapsed_time: Annotated[
         bool,
-        Option(help="Whether to get the elapsed time of the request"),
+        Option(help="Whether to report the elapsed time of the request"),
     ] = True,
 ) -> None:
     """CADS E2E Tests."""
