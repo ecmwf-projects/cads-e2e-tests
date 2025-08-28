@@ -20,9 +20,9 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
 
 
 @contextlib.contextmanager
-def tmp_working_dir() -> Iterator[str]:
+def tmp_working_dir(dir: str | None) -> Iterator[str]:
     old_dir = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with tempfile.TemporaryDirectory(dir=dir) as tmpdir:
         os.chdir(tmpdir)
         try:
             yield tmpdir

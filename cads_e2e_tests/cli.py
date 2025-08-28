@@ -97,6 +97,12 @@ def make_reports(
         bool,
         Option(help="Whether to report the elapsed time of the request"),
     ] = True,
+    working_dir: Annotated[
+        Optional[str],  # noqa: UP007
+        Option(
+            help="Execute tasks in sub-folders of this directory. Defaults to a temporary directory."
+        ),
+    ] = None,
 ) -> None:
     """CADS E2E Tests."""
     if requests_path is not None:
@@ -123,6 +129,7 @@ def make_reports(
         maximum_tries=client_maximum_tries,
         max_replication_lag=max_replication_lag,
         get_elapsed_time=elapsed_time,
+        working_dir=working_dir,
     ):
         reports.append(report)
 

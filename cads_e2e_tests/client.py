@@ -244,11 +244,12 @@ class TestClient(Client):
         log_level: str | None,
         max_replication_lag: float,
         get_elapsed_time: bool,
+        working_dir: str | None,
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
 
-        with utils.tmp_working_dir():
+        with utils.tmp_working_dir(working_dir):
             return self.make_report(
                 request=request,
                 cache_key=cache_key,
