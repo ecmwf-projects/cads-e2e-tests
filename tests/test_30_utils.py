@@ -11,9 +11,10 @@ from cads_e2e_tests import utils
 does_not_raise = contextlib.nullcontext
 
 
-def test_utils_tmp_working_dir() -> None:
-    with utils.tmp_working_dir() as tmpdir:
+def test_utils_tmp_working_dir(tmp_path: Path) -> None:
+    with utils.tmp_working_dir(str(tmp_path)) as tmpdir:
         assert os.getcwd() == os.path.realpath(tmpdir)
+        assert os.path.dirname(tmpdir) == str(tmp_path.resolve())
     assert not os.path.exists(tmpdir)
 
 
