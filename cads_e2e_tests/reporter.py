@@ -31,7 +31,7 @@ def reports_generator(
     n_jobs: int = 1,
     verbose: int = 0,
     regex_pattern: str = "",
-    download: bool = True,
+    download: bool | str = True,
     n_repeats: int = 1,
     cyclic: bool = True,
     randomise: bool = False,

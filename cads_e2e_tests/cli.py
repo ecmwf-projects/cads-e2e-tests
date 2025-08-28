@@ -61,6 +61,10 @@ def make_reports(
         bool,
         Option(help="Whether to download the results"),
     ] = True,
+    download_location: Annotated[
+        Optional[str],
+        Option(help="Where to download the results"),
+    ] = None,
     cache_key: Annotated[
         str,
         Option(help="Key used to invalidate the cache"),
@@ -106,7 +110,7 @@ def make_reports(
         n_jobs=n_jobs,
         verbose=verbose,
         regex_pattern=regex_pattern,
-        download=download,
+        download=(download_location if download and download_location else download),
         n_repeats=n_repeats,
         cyclic=cyclic,
         randomise=randomise,

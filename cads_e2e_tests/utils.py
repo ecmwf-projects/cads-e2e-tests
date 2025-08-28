@@ -20,14 +20,18 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
 
 
 @contextlib.contextmanager
-def tmp_working_dir() -> Iterator[str]:
-    old_dir = os.getcwd()
-    with tempfile.TemporaryDirectory() as tmpdir:
-        os.chdir(tmpdir)
-        try:
-            yield tmpdir
-        finally:
-            os.chdir(old_dir)
+def tmp_working_dir(download) -> Iterator[str]:
+    if isinstance(download, str):
+        os.chdir(download)
+        yield download
+    else:
+        old_dir = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            os.chdir(tmpdir)
+            try:
+                yield tmpdir
+            finally:
+                os.chdir(old_dir)
 
 
 @contextlib.contextmanager

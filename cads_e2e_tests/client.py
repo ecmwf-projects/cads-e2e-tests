@@ -176,7 +176,7 @@ class TestClient(Client):
         self,
         request: Request,
         cache_key: str | None,
-        download: bool,
+        download: bool | str,
         max_runtime: float | None,
     ) -> Report:
         if request.settings.max_runtime is not None:
@@ -245,14 +245,14 @@ class TestClient(Client):
         self,
         request: Request,
         cache_key: str | None,
-        download: bool,
+        download: bool | str,
         max_runtime: float | None,
         log_level: str | None,
     ) -> Report:
         if log_level is not None:
             logging.basicConfig(level=log_level.upper())
 
-        with utils.tmp_working_dir():
+        with utils.tmp_working_dir(download):
             return self.make_report(
                 request=request,
                 cache_key=cache_key,
