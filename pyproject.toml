@@ -15,6 +15,7 @@ classifiers = [
 ]
 dependencies = [
   "attrs",
+  "cads-adaptors@git+https://github.com/ecmwf-projects/cads-adaptors.git",
   "ecmwf-datastores-client",
   "joblib",
   "pydantic",

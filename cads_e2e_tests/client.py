@@ -8,12 +8,15 @@ from typing import Any
 
 import attrs
 import joblib
+from cads_adaptors import constraints
 from ecmwf.datastores import Client, Collections, Remote
 
 from . import utils
 from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
+
+COMPOSE_REQUEST_LOCALLY = True
 
 LIST_WIDGETS = [
     "DateRangeWidget",
@@ -64,6 +67,9 @@ class TestClient(Client):
             is None
         ]
 
+    def apply_constraints(self, dataset_form, request, dataset_constraints):
+        return constraints.validate_constraints(dataset_form, request, dataset_constraints)
+
     def random_parameters(
         self, collection_id: str, parameters: dict[str, Any]
     ) -> dict[str, Any]:
@@ -72,10 +78,18 @@ class TestClient(Client):
             name: form for form in collection.form if (name := form.pop("name", None))
         }
 
+        dataset_form = collection.form
+        dataset_constraints = collection.constraints
+
         # Initialise parameters
         original_keys = list(parameters)
         parameters = {k: utils.ensure_list(v) for k, v in parameters.items()}
-        parameters = collection.apply_constraints(parameters) | parameters
+
+        if COMPOSE_REQUEST_LOCALLY:
+            parameters = self.apply_constraints(dataset_form, parameters, dataset_constraints) | parameters
+        else:
+            parameters = collection.apply_constraints(parameters) | parameters
+
         added_keys = list(set(parameters) - set(original_keys))
         random.shuffle(added_keys)
 
@@ -84,7 +98,13 @@ class TestClient(Client):
         for name in names:
             if value := parameters[name]:
                 parameters[name] = random.choice(value)
-            for k, v in collection.apply_constraints(parameters).items():
+
+            if COMPOSE_REQUEST_LOCALLY:
+                params = self.apply_constraints(dataset_form, parameters, dataset_constraints)
+            else:
+                params = collection.apply_constraints(parameters)
+
+            for k, v in params.items():
                 if names.index(k) > names.index(name) or v == []:
                     if k in original_keys:
                         v = list(set(v) & set(parameters[k]))
@@ -135,7 +155,11 @@ class TestClient(Client):
             randomise = not parameters
 
         if randomise:
+            start_generation = time.time()
             parameters = self.random_parameters(request.collection_id, parameters)
+            end_generation = time.time()
+            print("Request parameters generated in "
+                  f"{end_generation - start_generation:.2f} seconds.")
 
         if cache_key is not None:
             parameters.setdefault(cache_key, datetime.datetime.now().isoformat())
