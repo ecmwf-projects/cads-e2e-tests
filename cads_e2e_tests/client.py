@@ -234,7 +234,7 @@ class TestClient(Client):
             **report.model_dump(exclude={"tracebacks", "finished_at"}),
         )
 
-    @joblib.delayed  # type: ignore[misc]
+    @joblib.delayed  # type: ignore[untyped-decorator]
     def delayed_make_report(
         self,
         request: Request,
