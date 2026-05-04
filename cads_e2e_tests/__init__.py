@@ -31,6 +31,7 @@ from .models import (
     load_requests,
 )
 from .reporter import reports_generator
+from .utils import AbstractCollectionUtils
 
 __all__ = [
     "__version__",
@@ -41,4 +42,5 @@ __all__ = [
     "dump_requests",
     "load_reports",
     "load_requests",
+    "AbstractCollectionUtils",
 ]

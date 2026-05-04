@@ -1,26 +1,32 @@
 import datetime
 import functools
 import logging
-import random
 import time
 from typing import Any
 
 import attrs
 import joblib
-from ecmwf.datastores import Client, Collections, Remote
+from ecmwf.datastores import Client, Collection, Collections, Remote
 
 from . import utils
 from .models import Report, Request
 
 LOGGER = logging.getLogger(__name__)
 
-LIST_WIDGETS = [
-    "DateRangeWidget",
-    "StringListArrayWidget",
-    "StringListWidget",
-]
 
 SLEEP_INCREMENTAL_RATIO = 1.5
+
+
+class CollectionUtils(utils.AbstractCollectionUtils):
+    def __init__(self, collection: Collection) -> None:
+        self.collection = collection
+
+    @property
+    def form(self) -> list[dict[str, Any]]:
+        return self.collection.form
+
+    def apply_constraints(self, parameters: dict[str, Any]) -> dict[str, Any]:
+        return self.collection.apply_constraints(parameters)
 
 
 def _licences_to_set_of_tuples(
@@ -80,60 +86,8 @@ class TestClient(Client):
         self, collection_id: str, parameters: dict[str, Any]
     ) -> dict[str, Any]:
         collection = self.get_collection(collection_id)
-        forms = {
-            name: form for form in collection.form if (name := form.pop("name", None))
-        }
-
-        # Initialise parameters
-        original_keys = list(parameters)
-        parameters = {k: utils.ensure_list(v) for k, v in parameters.items()}
-        parameters = collection.apply_constraints(parameters) | parameters
-        added_keys = list(set(parameters) - set(original_keys))
-        random.shuffle(added_keys)
-
-        # Random selection based on constraints
-        names = original_keys + added_keys
-        for name in names:
-            if value := parameters[name]:
-                parameters[name] = random.choice(value)
-            for k, v in collection.apply_constraints(parameters).items():
-                if names.index(k) > names.index(name) or v == []:
-                    if k in original_keys:
-                        v = list(set(v) & set(parameters[k]))
-                    parameters[k] = v
-
-        # Choose widgets to process
-        widgets_to_skip = set(parameters)
-        for name, widget in forms.items():
-            if not widget.get("required"):
-                widgets_to_skip.add(name)
-
-            match widget["type"]:
-                case "ExclusiveFrameWidget" | "InclusiveFrameWidget":
-                    widgets_to_skip.add(name)
-                    widgets_to_skip.update(widget["widgets"])
-                case "DateRangeWidget":
-                    if date := parameters.get(name):
-                        # Select one day
-                        start = date.split("/")[0]
-                        end = date.split("/")[-1]
-                        parameters[name] = "/".join([utils.random_date(start, end)] * 2)
-
-        # Process widgets
-        for name, widget in forms.items():
-            if name in widgets_to_skip:
-                continue
-            parameters[name] = utils.widget_random_selection(
-                widget["type"], **widget.get("details", {})
-            )
-
-        return {
-            name: utils.ensure_list(value)
-            if widget.get("type") in LIST_WIDGETS
-            else value
-            for name, widget in forms.items()
-            if utils.ensure_list(value := parameters.get(name))
-        }
+        collection_utils = CollectionUtils(collection)
+        return collection_utils.random_parameters(parameters)
 
     def update_request_parameters(
         self,
