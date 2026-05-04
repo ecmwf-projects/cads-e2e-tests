@@ -187,6 +187,7 @@ def test_client_random_request_widgets(url: str, keys: list[str]) -> None:
     assert set(parameters) == {
         "altitude",
         "date",
+        "ei_subfields",
         "format",
         "location",
         "max_5",
