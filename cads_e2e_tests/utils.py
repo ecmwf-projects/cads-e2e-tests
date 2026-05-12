@@ -170,7 +170,11 @@ class AbstractCollectionUtils(ABC):
         pass
 
     def random_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
-        forms = {name: form for form in self.form if (name := form.pop("name", None))}
+        forms = {
+            form["name"]: {k: v for k, v in form.items() if k != "name"}
+            for form in self.form
+            if form.get("name")
+        }
 
         # Initialise parameters
         original_keys = list(parameters)
