@@ -7,6 +7,7 @@ import os
 import random
 import tempfile
 import traceback
+from abc import ABC, abstractmethod
 from typing import Any, Iterator, Literal, Type
 
 DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
@@ -17,6 +18,12 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
     "stepY": 0.001,
     "stepX": 0.001,
 }
+
+LIST_WIDGETS = [
+    "DateRangeWidget",
+    "StringListArrayWidget",
+    "StringListWidget",
+]
 
 
 @contextlib.contextmanager
@@ -150,3 +157,70 @@ def ensure_list(value: Any) -> list[Any]:
     if isinstance(value, tuple | set | range):
         return list(value)
     return [value]
+
+
+class AbstractCollectionUtils(ABC):
+    @property
+    @abstractmethod
+    def form(self) -> list[dict[str, Any]]:
+        pass
+
+    @abstractmethod
+    def apply_constraints(self, parameters: dict[str, Any]) -> dict[str, Any]:
+        pass
+
+    def random_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
+        forms = {
+            form["name"]: {k: v for k, v in form.items() if k != "name"}
+            for form in self.form
+            if form.get("name")
+        }
+
+        # Initialise parameters
+        original_keys = list(parameters)
+        parameters = {k: ensure_list(v) for k, v in parameters.items()}
+        parameters = self.apply_constraints(parameters) | parameters
+        added_keys = list(set(parameters) - set(original_keys))
+        random.shuffle(added_keys)
+
+        # Random selection based on constraints
+        names = original_keys + added_keys
+        for name in names:
+            if value := parameters[name]:
+                parameters[name] = random.choice(value)
+            for k, v in self.apply_constraints(parameters).items():
+                if names.index(k) > names.index(name) or v == []:
+                    if k in original_keys:
+                        v = list(set(v) & set(parameters[k]))
+                    parameters[k] = v
+
+        # Choose widgets to process
+        widgets_to_skip = set(parameters)
+        for name, widget in forms.items():
+            if not widget.get("required"):
+                widgets_to_skip.add(name)
+
+            match widget["type"]:
+                case "ExclusiveFrameWidget" | "InclusiveFrameWidget":
+                    widgets_to_skip.add(name)
+                    widgets_to_skip.update(widget["widgets"])
+                case "DateRangeWidget":
+                    if date := parameters.get(name):
+                        # Select one day
+                        start = date.split("/")[0]
+                        end = date.split("/")[-1]
+                        parameters[name] = "/".join([random_date(start, end)] * 2)
+
+        # Process widgets
+        for name, widget in forms.items():
+            if name in widgets_to_skip:
+                continue
+            parameters[name] = widget_random_selection(
+                widget["type"], **widget.get("details", {})
+            )
+
+        return {
+            name: ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
+            for name, widget in forms.items()
+            if ensure_list(value := parameters.get(name))
+        }
