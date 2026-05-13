@@ -196,9 +196,10 @@ class AbstractCollectionUtils(ABC):
 
         # Choose widgets to process
         exclusive_to_add = {
-            random.choice(form["children"])
+            random.choice([k for k in form["children"] if k != "area"])
             for form in forms.values()
             if form["type"] == "ExclusiveGroupAccordionWidget"
+            and not set(form["children"]) & set(parameters)
         }
 
         widgets_to_skip = set(parameters)
