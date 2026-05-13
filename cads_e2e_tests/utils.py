@@ -19,9 +19,9 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
     "stepX": 0.001,
 }
 DEFAULT_GEOGRAPHIC_EXTENT_DETAILS: dict[str, Any] = {
-    "precision": 2,
+    "precision": 0,
     "range": {"n": 90, "w": -360, "s": -90, "e": 360},
-    "minimum_extent": {"lat": 0.25, "lon": 0.25},
+    "minimum_extent": {"lat": 1, "lon": 1},
     "maximum_extent": {"lat": 180, "lon": 360},
 }
 
@@ -233,9 +233,11 @@ class AbstractCollectionUtils(ABC):
                     if k in original_keys:
                         v = list(set(v) & set(parameters[k]))
                     parameters[k] = v
-        parameters = {k: v for k, v in parameters.items() if ensure_list(v)}
 
         # Choose widgets to process
+        for name, widget in forms.items():
+            if widget["type"] == "GeographicExtentWidget" and not parameters.get(name):
+                parameters.pop(name, None)
         widgets_to_add = {
             random.choice(form["children"])
             for form in forms.values()
