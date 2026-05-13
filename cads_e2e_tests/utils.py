@@ -236,7 +236,7 @@ class AbstractCollectionUtils(ABC):
         parameters = {k: v for k, v in parameters.items() if ensure_list(v)}
 
         # Choose widgets to process
-        exclusive_to_add = {
+        widgets_to_add = {
             random.choice(form["children"])
             for form in forms.values()
             if form["type"] == "ExclusiveGroupAccordionWidget"
@@ -245,7 +245,7 @@ class AbstractCollectionUtils(ABC):
 
         widgets_to_skip = set(parameters)
         for name, widget in forms.items():
-            if not widget.get("required") and name not in exclusive_to_add:
+            if not widget.get("required") and name not in widgets_to_add:
                 widgets_to_skip.add(name)
 
             match widget["type"]:
