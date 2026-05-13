@@ -21,7 +21,6 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
 DEFAULT_GEOGRAPHIC_EXTENT_DETAILS: dict[str, Any] = {
     "precision": 0,
     "range": {"n": 90, "w": -360, "s": -90, "e": 360},
-    "minimum_extent": {"lat": 1, "lon": 1},
     "maximum_extent": {"lat": 180, "lon": 360},
 }
 
@@ -170,6 +169,8 @@ def widget_random_selection(
         case "GeographicExtentWidget":
             details = DEFAULT_GEOGRAPHIC_EXTENT_DETAILS | details
             step = 10 ** (-details["precision"])
+            if "minimum_extent" not in details:
+                details["minimum_extent"] = {"lat": step, "lon": step}
             west, east = random_range_from_range(
                 details["range"]["w"],
                 details["range"]["e"],
