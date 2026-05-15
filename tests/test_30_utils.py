@@ -74,6 +74,13 @@ def test_random_choiche_from_range() -> None:
         assert utils.random_choice_from_range(0, 0.2, 0.1) in [0, 0.1, 0.2]
 
 
+def test_random_range_from_range() -> None:
+    for _ in range(100):
+        start, stop = utils.random_range_from_range(-10, 10, 1, 2, 4)
+        assert -10 <= start <= stop <= 10
+        assert 2 <= (stop - start) <= 4
+
+
 @pytest.mark.parametrize(
     "value,expected",
     [

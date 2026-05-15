@@ -18,11 +18,17 @@ DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
     "stepY": 0.001,
     "stepX": 0.001,
 }
+DEFAULT_GEOGRAPHIC_EXTENT_DETAILS: dict[str, Any] = {
+    "precision": 0,
+    "range": {"n": 90, "w": -360, "s": -90, "e": 360},
+    "maximum_extent": {"lat": 180, "lon": 360},
+}
 
 LIST_WIDGETS = [
     "DateRangeWidget",
     "StringListArrayWidget",
     "StringListWidget",
+    "GeographicExtentWidget",
 ]
 
 
@@ -102,8 +108,24 @@ def reorder(
     ]
 
 
-def random_choice_from_range(min: float, max: float, step: float = 1.0) -> float:
-    return round(random.uniform(min, max) / step) * step
+def random_choice_from_range(start: float, stop: float, step: float = 1.0) -> float:
+    return round(random.uniform(start, stop) / step) * step
+
+
+def random_range_from_range(
+    start: float,
+    stop: float,
+    step: float = 1.0,
+    min_extent: float = 0,
+    max_extent: float | None = None,
+) -> tuple[float, float]:
+    assert min_extent >= 0
+    assert (stop - start) >= min_extent
+    start = random_choice_from_range(start, stop - min_extent, step)
+    if max_extent is not None:
+        stop = min(stop, start + max_extent)
+    stop = random_choice_from_range(start + min_extent, stop, step)
+    return start, stop
 
 
 def widget_random_selection(
@@ -114,6 +136,7 @@ def widget_random_selection(
         "FreeformInputWidget",
         "DateRangeWidget",
         "StringListArrayWidget",
+        "GeographicExtentWidget",
     ],
     **details: Any,
 ) -> Any:
@@ -145,6 +168,28 @@ def widget_random_selection(
             for group in details["groups"]:
                 values.extend(group["values"])
             return random.choice(values)
+        case "GeographicExtentWidget":
+            details = DEFAULT_GEOGRAPHIC_EXTENT_DETAILS | details
+            step = 10 ** (-details["precision"])
+            step_x = details.get("stepX", step)
+            step_y = details.get("stepY", step)
+            details.setdefault("minimum_extent", {"lat": step_y, "lon": step_x})
+
+            west, east = random_range_from_range(
+                details["range"]["w"],
+                details["range"]["e"],
+                step_x,
+                details["minimum_extent"]["lon"],
+                details["maximum_extent"]["lon"],
+            )
+            south, north = random_range_from_range(
+                details["range"]["s"],
+                details["range"]["n"],
+                step_y,
+                details["minimum_extent"]["lat"],
+                details["maximum_extent"]["lat"],
+            )
+            return [north, west, south, east]
         case _:
             raise NotImplementedError(f"{widget_type=}")
 
@@ -195,9 +240,19 @@ class AbstractCollectionUtils(ABC):
                     parameters[k] = v
 
         # Choose widgets to process
+        for name, widget in forms.items():
+            if widget["type"] == "GeographicExtentWidget" and not parameters.get(name):
+                parameters.pop(name, None)
+        widgets_to_add = {
+            random.choice(form["children"])
+            for form in forms.values()
+            if form["type"] == "ExclusiveGroupAccordionWidget"
+            and not set(form["children"]) & set(parameters)
+        }
+
         widgets_to_skip = set(parameters)
         for name, widget in forms.items():
-            if not widget.get("required"):
+            if not widget.get("required") and name not in widgets_to_add:
                 widgets_to_skip.add(name)
 
             match widget["type"]:

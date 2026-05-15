@@ -183,8 +183,11 @@ def test_client_random_request_widgets(url: str, keys: list[str]) -> None:
         reports_generator(url=url, keys=keys, requests=[request], cache_key=None)
     )
     parameters = report.request.parameters
+    optional_keys = {"opt_1", "opt_2", "opt_3"}
+    mandatory_keys = set(parameters) - optional_keys
 
-    assert set(parameters) == {
+    assert len(set(parameters) & optional_keys) == 1
+    assert mandatory_keys == {
         "altitude",
         "date",
         "ei_subfields",
