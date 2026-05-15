@@ -119,7 +119,6 @@ def random_range_from_range(
     min_extent: float = 0,
     max_extent: float | None = None,
 ) -> tuple[float, float]:
-    assert start <= stop
     assert min_extent >= 0
     assert (stop - start) >= min_extent
     start = random_choice_from_range(start, stop - min_extent, step)
