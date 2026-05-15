@@ -168,21 +168,22 @@ def widget_random_selection(
             return random.choice(values)
         case "GeographicExtentWidget":
             details = DEFAULT_GEOGRAPHIC_EXTENT_DETAILS | details
-
             step = 10 ** (-details["precision"])
-            details.setdefault("minimum_extent", {"lat": step, "lon": step})
+            step_x = details.get("stepX", step)
+            step_y = details.get("stepY", step)
+            details.setdefault("minimum_extent", {"lat": step_y, "lon": step_x})
 
             west, east = random_range_from_range(
                 details["range"]["w"],
                 details["range"]["e"],
-                step,
+                step_x,
                 details["minimum_extent"]["lon"],
                 details["maximum_extent"]["lon"],
             )
             south, north = random_range_from_range(
                 details["range"]["s"],
                 details["range"]["n"],
-                step,
+                step_y,
                 details["minimum_extent"]["lat"],
                 details["maximum_extent"]["lat"],
             )
