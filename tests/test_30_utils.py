@@ -76,8 +76,8 @@ def test_random_choiche_from_range() -> None:
 
 def test_random_range_from_range() -> None:
     for _ in range(100):
-        start, stop = utils.random_range_from_range(0, 10, 1, 2, 4)
-        assert 0 <= start <= stop <= 10
+        start, stop = utils.random_range_from_range(-10, 10, 1, 2, 4)
+        assert -10 <= start <= stop <= 10
         assert 2 <= (stop - start) <= 4
 
 
