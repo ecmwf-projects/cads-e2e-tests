@@ -8,21 +8,9 @@ import random
 import tempfile
 import traceback
 from abc import ABC, abstractmethod
-from typing import Any, Iterator, Literal, Type
+from typing import Any, Iterator, Type
 
-DEFAULT_GEOGRAPHIC_LOCATION_DETAILS: dict[str, float] = {
-    "minY": -90.0,
-    "maxY": 90.0,
-    "minX": -180.0,
-    "maxX": 180.0,
-    "stepY": 0.001,
-    "stepX": 0.001,
-}
-DEFAULT_GEOGRAPHIC_EXTENT_DETAILS: dict[str, Any] = {
-    "precision": 0,
-    "range": {"n": 90, "w": -360, "s": -90, "e": 360},
-    "maximum_extent": {"lat": 180, "lon": 360},
-}
+from . import widgets
 
 LIST_WIDGETS = [
     "DateRangeWidget",
@@ -128,72 +116,6 @@ def random_range_from_range(
     return start, stop
 
 
-def widget_random_selection(
-    widget_type: Literal[
-        "StringChoiceWidget",
-        "StringListWidget",
-        "GeographicLocationWidget",
-        "FreeformInputWidget",
-        "DateRangeWidget",
-        "StringListArrayWidget",
-        "GeographicExtentWidget",
-    ],
-    **details: Any,
-) -> Any:
-    match widget_type:
-        case "StringChoiceWidget" | "StringListWidget":
-            return random.choice(details["values"])
-        case "GeographicLocationWidget":
-            details = DEFAULT_GEOGRAPHIC_LOCATION_DETAILS | details
-            return {
-                coord: random_choice_from_range(
-                    *[details[f"{prefix}{suffix}"] for prefix in ("min", "max", "step")]
-                )
-                for coord, suffix in zip(["latitude", "longitude"], ["Y", "X"])
-            }
-        case "FreeformInputWidget":
-            if (value := details.get("default")) is None:
-                match details.get("dtype"):
-                    case "float":
-                        value = 999.0
-                    case "int":
-                        value = 999
-                    case "string":
-                        value = ""
-            return value
-        case "DateRangeWidget":
-            return "/".join([random_date(details["minStart"], details["maxEnd"])] * 2)
-        case "StringListArrayWidget":
-            values = []
-            for group in details["groups"]:
-                values.extend(group["values"])
-            return random.choice(values)
-        case "GeographicExtentWidget":
-            details = DEFAULT_GEOGRAPHIC_EXTENT_DETAILS | details
-            step = 10 ** (-details["precision"])
-            step_x = details.get("stepX", step)
-            step_y = details.get("stepY", step)
-            details.setdefault("minimum_extent", {"lat": step_y, "lon": step_x})
-
-            west, east = random_range_from_range(
-                details["range"]["w"],
-                details["range"]["e"],
-                step_x,
-                details["minimum_extent"]["lon"],
-                details["maximum_extent"]["lon"],
-            )
-            south, north = random_range_from_range(
-                details["range"]["s"],
-                details["range"]["n"],
-                step_y,
-                details["minimum_extent"]["lat"],
-                details["maximum_extent"]["lat"],
-            )
-            return [north, west, south, east]
-        case _:
-            raise NotImplementedError(f"{widget_type=}")
-
-
 def ensure_list(value: Any) -> list[Any]:
     if isinstance(value, list):
         return value
@@ -240,8 +162,8 @@ class AbstractCollectionUtils(ABC):
                     parameters[k] = v
 
         # Choose widgets to process
-        for name, widget in forms.items():
-            if widget["type"] == "GeographicExtentWidget" and not parameters.get(name):
+        for name, form in forms.items():
+            if form["type"] == "GeographicExtentWidget" and not parameters.get(name):
                 parameters.pop(name, None)
         widgets_to_add = {
             random.choice(form["children"])
@@ -251,14 +173,14 @@ class AbstractCollectionUtils(ABC):
         }
 
         widgets_to_skip = set(parameters)
-        for name, widget in forms.items():
-            if not widget.get("required") and name not in widgets_to_add:
+        for name, form in forms.items():
+            if not form.get("required") and name not in widgets_to_add:
                 widgets_to_skip.add(name)
 
-            match widget["type"]:
+            match form["type"]:
                 case "ExclusiveFrameWidget" | "InclusiveFrameWidget":
                     widgets_to_skip.add(name)
-                    widgets_to_skip.update(widget["widgets"])
+                    widgets_to_skip.update(form["widgets"])
                 case "DateRangeWidget":
                     if date := parameters.get(name):
                         # Select one day
@@ -267,15 +189,13 @@ class AbstractCollectionUtils(ABC):
                         parameters[name] = "/".join([random_date(start, end)] * 2)
 
         # Process widgets
-        for name, widget in forms.items():
+        normalised_parameters = {}
+        for name, form in forms.items():
+            widget = widgets.instantiate_widget(form["type"], **form.get("details", {}))
             if name in widgets_to_skip:
-                continue
-            parameters[name] = widget_random_selection(
-                widget["type"], **widget.get("details", {})
-            )
-
-        return {
-            name: ensure_list(value) if widget.get("type") in LIST_WIDGETS else value
-            for name, widget in forms.items()
-            if ensure_list(value := parameters.get(name))
-        }
+                value = parameters.get(name)
+            else:
+                value = widget.random_selection()
+            if ensure_list(value):
+                normalised_parameters[name] = widget.normalise_selection(value)
+        return normalised_parameters
